@@ -60,7 +60,8 @@
     return variant.downloadable ? formatBytes(variant.sizeBytes) || t(lang, 'unknown') : '';
   }
 
-  function renderVideos(videos) {
+  function renderVideos(videos, activeDownloads) {
+    activeDownloads = activeDownloads || new Map();
     const lang = local.settings.language;
     els.videoList.innerHTML = '';
     els.countBadge.textContent = String(videos.length);
@@ -143,6 +144,18 @@
         doneBox.classList.remove('hidden');
         playBtn.onclick = () => chrome.downloads.open(downloadId);
         folderBtn.onclick = () => chrome.downloads.show(downloadId);
+      }
+
+      const activeVariantIndex = video.variants.findIndex((v) => activeDownloads.has(v.url));
+      if (activeVariantIndex !== -1) {
+        const activeVariant = video.variants[activeVariantIndex];
+        applyVariant(activeVariantIndex);
+        setDownloading(true);
+        const initialPercent = activeDownloads.get(activeVariant.url);
+        if (initialPercent != null) progressFill.style.width = `${initialPercent}%`;
+        progressLabel.textContent = `${initialPercent ?? 0}%`;
+        cancelBtn.onclick = () => cancelWasmDownload(activeVariant.url);
+        resumeWasmProgress(activeVariant, progressFill, progressLabel, setDownloading, setDone);
       }
 
       downloadBtn.addEventListener('click', async () => {
@@ -260,6 +273,38 @@
     });
   }
 
+  /**
+   * A diferencia de downloadViaWasm(), NO dispara una descarga nueva — solo
+   * escucha el progreso de una que background.js ya venía corriendo desde
+   * antes de que este popup existiera (ver getActiveDownloads()), hasta que
+   * llegue SVD_WASM_DONE (broadcast que background.js manda cuando termina,
+   * la haya iniciado el popup que sea).
+   */
+  function resumeWasmProgress(variant, progressFill, progressLabel, setDownloading, setDone) {
+    const onMessage = (message) => {
+      if (!message || message.url !== variant.url) return;
+
+      if (message.type === 'SVD_WASM_PROGRESS') {
+        if (message.percent != null) {
+          progressFill.style.width = `${message.percent}%`;
+          progressLabel.textContent = `${message.percent}%`;
+        }
+        return;
+      }
+
+      if (message.type === 'SVD_WASM_DONE') {
+        chrome.runtime.onMessage.removeListener(onMessage);
+        if (message.ok) {
+          setDone(message.downloadId);
+        } else {
+          showStatus(message.error || 'Error reconstruyendo el stream.');
+          setDownloading(false);
+        }
+      }
+    };
+    chrome.runtime.onMessage.addListener(onMessage);
+  }
+
   function cancelWasmDownload(url) {
     chrome.runtime.sendMessage({ type: 'SVD_WASM_CANCEL', url }, () => void chrome.runtime.lastError);
   }
@@ -335,8 +380,23 @@
     });
   }
 
+  /**
+   * Descargas HLS/wasm que siguen en curso en background.js aunque el popup
+   * que las inició ya se haya cerrado — así, si el usuario vuelve a abrir el
+   * popup mientras tanto, ve el progreso real en vez del botón "Download"
+   * como si nada estuviera pasando. Devuelve un Map url -> percent.
+   */
+  function getActiveDownloads() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'SVD_GET_ACTIVE_DOWNLOADS' }, (resp) => {
+        void chrome.runtime.lastError;
+        resolve(new Map((resp && resp.active ? resp.active : []).map((e) => [e.url, e.percent])));
+      });
+    });
+  }
+
   async function loadVideos() {
-    const [response, streamsResponse] = await Promise.all([
+    const [response, streamsResponse, activeDownloads] = await Promise.all([
       sendToContentScript({ type: 'SVD_GET_VIDEOS' }),
       new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: 'SVD_GET_STREAMS', tabId: local.tabId }, (r) => {
@@ -344,6 +404,7 @@
           resolve(r);
         });
       }),
+      getActiveDownloads(),
     ]);
 
     const streams = streamsResponse && streamsResponse.ok ? streamsResponse.streams : [];
@@ -361,9 +422,9 @@
       local.domain = (response && response.domain) || local.domain;
       const fallbackPoster = (response && response.pageThumbnail) || null;
       const videos = [...domVideos, ...streamVideos].map((v) => ({ ...v, poster: v.poster || fallbackPoster }));
-      renderVideos(videos);
+      renderVideos(videos, activeDownloads);
     } else {
-      renderVideos([]);
+      renderVideos([], activeDownloads);
       showStatus('Esta página no permite detectar videos.');
     }
   }
@@ -391,6 +452,36 @@
     };
 
     await loadVideos();
+    await maybeAutoExpandQuality();
+  }
+
+  /**
+   * Si el popup se abrió desde el botón flotante que overlay.js dibuja sobre
+   * el <video> (no desde el icono normal de la barra), despliega de una vez
+   * el selector de calidad del primer video para que el usuario elija la
+   * resolución con un solo clic — ver SVD_OPEN_POPUP/SVD_CONSUME_AUTO_EXPAND
+   * en background.js. showPicker() no existe en navegadores viejos ni
+   * funciona en un <select> deshabilitado (una sola calidad, nada que
+   * elegir), así que ambos casos fallan en silencio.
+   */
+  function maybeAutoExpandQuality() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'SVD_CONSUME_AUTO_EXPAND' }, (resp) => {
+        void chrome.runtime.lastError;
+        if (resp && resp.autoExpand) {
+          const select = els.videoList.querySelector('.video-item__quality');
+          if (select && !select.disabled && typeof select.showPicker === 'function') {
+            try {
+              select.showPicker();
+            } catch (_err) {
+              // Requiere activación de usuario reciente; si no está disponible,
+              // el <select> queda ahí, colapsado pero perfectamente usable.
+            }
+          }
+        }
+        resolve();
+      });
+    });
   }
 
   els.refreshBtn.addEventListener('click', async () => {

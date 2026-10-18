@@ -36,6 +36,12 @@
       "matches": ["<all_urls>"],
       "js": ["scripts/utils.js", "scripts/storage.js", "scripts/detector.js", "content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": ["overlay.js"],
+      "run_at": "document_idle"
     }
   ],
 

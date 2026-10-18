@@ -30,6 +30,29 @@ importScripts('scripts/utils.js', 'scripts/storage.js');
 // downloadId -> { site, sizeHint }, solo mientras la descarga está en curso.
 const pendingDownloads = new Map();
 
+// true justo después de que el botón flotante (overlay.js) pidió abrir el
+// popup — ver SVD_OPEN_POPUP / SVD_CONSUME_AUTO_EXPAND más abajo.
+let pendingAutoExpandQuality = false;
+
+// url del stream -> { percent, tabId }, solo mientras dura una
+// reconstrucción HLS/DASH vía ffmpeg.wasm — permite mostrar el progreso en
+// el badge del icono aunque el popup que la inició ya se haya cerrado, Y
+// que un popup recién (re)abierto sepa que ya hay una descarga en curso
+// para ese video y muestre su progreso actual en vez del botón "Download"
+// (ver SVD_WASM_PROGRESS, SVD_GET_ACTIVE_DOWNLOADS y restoreBadge más abajo).
+const activeWasmProgress = new Map();
+
+/** Vuelve a mostrar el conteo normal de videos detectados en el badge, después de mostrar un progreso de descarga. */
+function restoreBadge(tabId) {
+  const count = menuVideosByTab.get(tabId)?.length || 0;
+  if (count > 0) {
+    chrome.action.setBadgeBackgroundColor({ tabId, color: '#4285F4' });
+    chrome.action.setBadgeText({ tabId, text: String(count) });
+  } else {
+    chrome.action.setBadgeText({ tabId, text: '' });
+  }
+}
+
 // tabId -> Map(url -> { url, kind, tabId, firstSeen }), streams detectados
 // por red en esa pestaña. Se limpia cuando la pestaña navega o se cierra.
 const streamsByTab = new Map();
@@ -161,10 +184,13 @@ function siteFromTab(tab) {
   }
 }
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  const entry = menuItemMap.get(String(info.menuItemId));
-  if (!entry) return;
-  const { url, kind } = entry;
+/**
+ * Descarga `url` (video detectado en `tab`), manejando los tres casos
+ * posibles: stream HLS/DASH (reconstrucción vía ffmpeg.wasm), blob: (no hay
+ * nada honesto que descargar sin pasar por el popup) y archivo directo
+ * (chrome.downloads.download normal). Usada por el menú contextual.
+ */
+async function downloadDetectedVideo(url, kind, tab) {
   if (!url) return;
 
   if (url.startsWith('blob:')) {
@@ -229,6 +255,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       pendingDownloads.set(downloadId, { site, sizeHint: 0 });
     }
   );
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  const entry = menuItemMap.get(String(info.menuItemId));
+  if (!entry) return;
+  await downloadDetectedVideo(entry.url, entry.kind, tab);
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -262,8 +294,77 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'SVD_WASM_DOWNLOAD') {
-    startWasmDownload(message).then(sendResponse);
+    (async () => {
+      // sender.tab no existe acá (el mensaje viene del popup, una página de
+      // extensión, no de un content script) — hay que preguntarle a
+      // chrome.tabs cuál es la pestaña activa para poder actualizar SU badge.
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tabId = activeTab?.id ?? null;
+      if (tabId != null) activeWasmProgress.set(message.url, { percent: 0, tabId });
+
+      const result = await startWasmDownload(message);
+
+      activeWasmProgress.delete(message.url);
+      if (tabId != null) restoreBadge(tabId);
+      // Broadcast: para que un popup recién (re)abierto que ya perdió la
+      // respuesta directa (el que lo pidió puede haberse cerrado) sepa que
+      // esta descarga terminó — ver el listener que arma el estado
+      // "reanudado" en popup.js.
+      chrome.runtime.sendMessage(
+        { type: 'SVD_WASM_DONE', url: message.url, ok: result.ok, downloadId: result.downloadId, error: result.error },
+        () => void chrome.runtime.lastError
+      );
+
+      sendResponse(result);
+    })();
     return true;
+  }
+
+  if (message.type === 'SVD_WASM_PROGRESS') {
+    const entry = activeWasmProgress.get(message.url);
+    if (entry) {
+      entry.percent = message.percent;
+      if (message.percent != null) {
+        chrome.action.setBadgeBackgroundColor({ tabId: entry.tabId, color: '#fbbc04' });
+        chrome.action.setBadgeText({ tabId: entry.tabId, text: `${message.percent}%` });
+      }
+    }
+    return false;
+  }
+
+  if (message.type === 'SVD_GET_ACTIVE_DOWNLOADS') {
+    sendResponse({ active: Array.from(activeWasmProgress.entries()).map(([url, v]) => ({ url, percent: v.percent })) });
+    return false;
+  }
+
+  if (message.type === 'SVD_OPEN_POPUP') {
+    // El clic en el botón flotante (overlay.js) llega acá como mensaje async,
+    // pero Chrome sigue reconociendo la "activación transitoria" reciente de
+    // la pestaña (el clic real del usuario en la página) para permitir
+    // openPopup() — a diferencia de requestPictureInPicture(), no hace falta
+    // propagarlo de forma síncrona con chrome.scripting.executeScript.
+    //
+    // pendingAutoExpandQuality queda en true hasta que popup.js la consuma
+    // (SVD_CONSUME_AUTO_EXPAND) justo después de renderizar la lista de
+    // videos, para abrir el selector de calidad del primero sin que el
+    // usuario tenga que tocarlo — solo cuando el popup se abrió desde este
+    // botón, no cuando se abre del modo normal (icono de la barra).
+    pendingAutoExpandQuality = true;
+    chrome.action.openPopup().then(
+      () => sendResponse({ ok: true }),
+      (err) => {
+        pendingAutoExpandQuality = false;
+        sendResponse({ ok: false, error: err?.message });
+      }
+    );
+    return true;
+  }
+
+  if (message.type === 'SVD_CONSUME_AUTO_EXPAND') {
+    const value = pendingAutoExpandQuality;
+    pendingAutoExpandQuality = false;
+    sendResponse({ autoExpand: value });
+    return false;
   }
 
   return false;
