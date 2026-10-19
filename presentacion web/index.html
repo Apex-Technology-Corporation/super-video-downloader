@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Super Video Downloader</title>
+<meta name="description" content="Extensión Manifest V3 para Chrome y navegadores Chromium que detecta videos de enlace directo y streams HLS sin cifrar en la página actual y los descarga localmente con ffmpeg.wasm." />
+<meta name="theme-color" content="#070b16" />
+<link rel="icon" type="image/png" href="../assets/icons/icon32.png" />
+<style>
+  :root {
+    --bg: #070b16;
+    --bg-2: #0b1122;
+    --surface: #10172b;
+    --surface-2: #151e36;
+    --surface-3: #1b2542;
+    --line: rgba(148, 170, 220, 0.12);
+    --line-strong: rgba(148, 170, 220, 0.22);
+    --text: #eef2fb;
+    --text-2: #a9b4cc;
+    --text-3: #7d89a5;
+    --accent: #4285f4;
+    --accent-2: #8ab4f8;
+    --accent-soft: rgba(66, 133, 244, 0.14);
+    --success: #34a853;
+    --success-2: #81c995;
+    --warn: #fbbc04;
+    --danger: #f28b82;
+    --radius-xl: 24px;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+    --font: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+    --max: 1160px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Tokens del popup real (popup/popup.css) para las recreaciones */
+    --p-bg: #202124;
+    --p-card: #2d2f33;
+    --p-text: #ffffff;
+    --p-text-2: #9aa0a6;
+    --p-border: #3c4043;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(900px 520px at 85% -10%, rgba(66, 133, 244, 0.20), transparent 60%),
+      radial-gradient(700px 480px at -10% 30%, rgba(52, 168, 83, 0.07), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+  img { max-width: 100%; display: block; }
+  a { color: var(--accent-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code {
+    background: rgba(138, 180, 248, 0.10);
+    border: 1px solid rgba(138, 180, 248, 0.14);
+    padding: 0.1em 0.4em;
+    border-radius: 6px;
+    color: #c8daff;
+    overflow-wrap: anywhere;
+  }
+  :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: 6px; }
+
+  .skip-link {
+    position: absolute; left: 16px; top: -60px; z-index: 100;
+    background: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px;
+    transition: top 150ms;
+  }
+  .skip-link:focus { top: 12px; text-decoration: none; }
+
+  .container { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  section { padding: 96px 0; position: relative; }
+  .section-head { max-width: 760px; margin-bottom: 48px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent-2); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ''; width: 18px; height: 2px; background: var(--accent); border-radius: 2px; }
+  h1, h2, h3, h4 { margin: 0; line-height: 1.2; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-bottom: 16px; }
+  h3 { font-size: 18px; font-weight: 650; }
+  .lead { font-size: 18px; color: var(--text-2); margin: 0; }
+  p { margin: 0 0 12px; }
+
+  /* ── Botones ─────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 46px; padding: 0 22px; border-radius: 999px;
+    font: 600 15px/1 var(--font); border: 1px solid transparent; cursor: pointer;
+    transition: background 180ms var(--ease), transform 180ms var(--ease), border-color 180ms var(--ease), box-shadow 180ms var(--ease);
+    text-decoration: none !important; white-space: nowrap;
+  }
+  .btn svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+  .btn--primary { background: var(--accent); color: #fff; box-shadow: 0 10px 30px -10px rgba(66, 133, 244, 0.8); }
+  .btn--primary:hover { background: #5b95f5; transform: translateY(-1px); }
+  .btn--ghost { background: rgba(255, 255, 255, 0.04); color: var(--text); border-color: var(--line-strong); }
+  .btn--ghost:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(138, 180, 248, 0.4); }
+  .btn--sm { min-height: 38px; padding: 0 16px; font-size: 14px; }
+
+  /* ── Navegación ──────────────────────────────────────── */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(7, 11, 22, 0.72);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 200ms, background 200ms;
+  }
+  .nav.is-scrolled { border-bottom-color: var(--line); background: rgba(7, 11, 22, 0.88); }
+  .nav__inner { display: flex; align-items: center; gap: 24px; height: 68px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; font-size: 16px; }
+  .brand:hover { text-decoration: none; }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; box-shadow: 0 6px 18px -6px rgba(66, 133, 244, 0.8); }
+  .nav__links { display: flex; align-items: center; gap: 4px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+  .nav__links a {
+    display: block; padding: 8px 12px; border-radius: 8px;
+    color: var(--text-2); font-size: 14.5px; font-weight: 500;
+    transition: color 150ms, background 150ms;
+  }
+  .nav__links a:hover, .nav__links a.is-active { color: var(--text); background: rgba(255, 255, 255, 0.05); text-decoration: none; }
+  .nav__cta { margin-left: 8px; }
+  .nav__toggle {
+    display: none; margin-left: auto; width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line-strong); color: var(--text); cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .nav__toggle svg { width: 22px; height: 22px; fill: currentColor; }
+  .nav__toggle .icon-close { display: none; }
+  .nav__toggle[aria-expanded='true'] .icon-close { display: block; }
+  .nav__toggle[aria-expanded='true'] .icon-menu { display: none; }
+
+  @media (max-width: 960px) {
+    .nav__toggle { display: inline-flex; }
+    .nav__menu {
+      position: absolute; left: 0; right: 0; top: 68px;
+      background: rgba(9, 14, 28, 0.98); border-bottom: 1px solid var(--line);
+      padding: 12px 16px 20px;
+      display: none;
+    }
+    .nav__menu.is-open { display: block; animation: drop 200ms var(--ease); }
+    .nav__links { flex-direction: column; align-items: stretch; margin: 0; }
+    .nav__links a { padding: 12px 14px; font-size: 16px; }
+    .nav__cta { margin: 12px 0 0; width: 100%; }
+  }
+  @media (min-width: 961px) { .nav__menu { display: flex; align-items: center; margin-left: auto; } }
+  @keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+  /* ── Hero ────────────────────────────────────────────── */
+  .hero { padding: 72px 0 96px; }
+  .hero__grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+  .hero__badge {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px;
+    border-radius: 999px; background: var(--accent-soft); border: 1px solid rgba(66, 133, 244, 0.3);
+    color: var(--accent-2); font-size: 13px; font-weight: 600; margin-bottom: 22px;
+  }
+  .hero__badge span {
+    background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 11.5px; letter-spacing: 0.04em;
+  }
+  .hero h1 { font-size: clamp(36px, 5.6vw, 60px); font-weight: 800; letter-spacing: -0.025em; margin-bottom: 20px; }
+  .grad {
+    background: linear-gradient(92deg, #8ab4f8 0%, #4285f4 55%, #81c995 110%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .lead { max-width: 560px; margin-bottom: 30px; }
+  .hero__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+    font-size: 13px; color: var(--text-2); font-weight: 500;
+  }
+  .chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .chip i.g { background: var(--success); }
+  .chip i.y { background: var(--warn); }
+
+  /* Escena: navegador + video + popup */
+  .scene { position: relative; padding: 0 0 40px 0; }
+  .browser {
+    position: relative; border-radius: 16px; overflow: hidden;
+    background: #151a2a; border: 1px solid var(--line-strong); box-shadow: var(--shadow);
+  }
+  .browser__bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #1b2133; border-bottom: 1px solid var(--line); }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: #3a4258; display: block; }
+  .url {
+    flex: 1; min-width: 0; height: 26px; border-radius: 999px; background: #0f1422; color: var(--text-3);
+    font-size: 12px; display: flex; align-items: center; padding: 0 12px; white-space: nowrap; overflow: hidden;
+  }
+  .ext-icon { position: relative; width: 24px; height: 24px; flex-shrink: 0; }
+  .ext-icon img { width: 24px; height: 24px; border-radius: 6px; }
+  .ext-icon b {
+    position: absolute; right: -7px; bottom: -6px; min-width: 16px; height: 14px; padding: 0 4px;
+    border-radius: 4px; background: #4285f4; color: #fff; font-size: 10px; line-height: 14px; text-align: center; font-weight: 700;
+  }
+  .browser__page { padding: 18px; }
+  .fake-video {
+    position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 70% 30%, rgba(66, 133, 244, 0.35), transparent 60%),
+      linear-gradient(135deg, #1c2a4f, #0d1326 70%);
+  }
+  .fake-video__play {
+    position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12); display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .fake-video__play svg { width: 28px; height: 28px; fill: #fff; margin-left: 4px; }
+  .fake-video__bar { position: absolute; left: 12px; right: 12px; bottom: 12px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.18); }
+  .fake-video__bar::after { content: ''; position: absolute; inset: 0 62% 0 0; background: var(--accent); border-radius: 4px; }
+  /* Botón flotante, réplica fiel de overlay.js (36px, rgba(32,33,36,.85), 8px desde la esquina) */
+  .overlay-btn {
+    position: absolute; top: 8px; left: 8px; width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(32, 33, 36, 0.85); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+  .overlay-btn svg { width: 18px; height: 18px; fill: currentColor; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(66, 133, 244, 0.5); }
+    50% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 10px rgba(66, 133, 244, 0); background: #4285f4; }
+  }
+  .callout {
+    position: absolute; font-size: 12px; color: var(--text-2); background: rgba(16, 23, 43, 0.92);
+    border: 1px solid var(--line-strong); border-radius: 10px; padding: 6px 10px; white-space: nowrap;
+  }
+  .page-lines { margin-top: 14px; display: grid; gap: 8px; }
+  .page-lines i { display: block; height: 9px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); }
+  .page-lines i:nth-child(1) { width: 70%; background: rgba(255, 255, 255, 0.12); }
+  .page-lines i:nth-child(3) { width: 82%; }
+
+  /* Réplica del popup (popup/popup.css) */
+  .popup {
+    width: 340px; max-width: 100%; background: var(--p-bg); color: var(--p-text);
+    border-radius: 14px; padding: 12px; box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    font-family: 'Segoe UI', Roboto, -apple-system, Arial, sans-serif; font-size: 13px; line-height: 1.35;
+    display: flex; flex-direction: column; gap: 8px; text-align: left;
+  }
+  .scene .popup { position: absolute; right: -18px; bottom: 0; }
+  .p-head { display: flex; align-items: center; gap: 8px; }
+  .p-head svg { width: 20px; height: 20px; fill: #4285f4; flex-shrink: 0; }
+  .p-head strong { font-size: 14px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-head .p-ico { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; color: var(--p-text-2); }
+  .p-head .p-ico svg { width: 16px; height: 16px; fill: currentColor; }
+  .p-site { display: flex; align-items: center; gap: 10px; background: var(--p-card); border-radius: 14px; padding: 8px 10px; }
+  .p-fav { width: 22px; height: 22px; border-radius: 6px; background: #4285f4; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .p-site small { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--p-text-2); }
+  .p-site span.d { font-weight: 500; font-size: 12.5px; }
+  .p-count { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(66, 133, 244, 0.15); color: #4285f4; }
+  .p-item { display: flex; gap: 10px; align-items: flex-start; background: var(--p-card); border-radius: 12px; padding: 8px; }
+  .p-thumb { position: relative; width: 66px; height: 44px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .p-thumb svg { width: 18px; height: 18px; fill: rgba(255, 255, 255, 0.85); }
+  .p-thumb em { position: absolute; right: 3px; bottom: 3px; font-style: normal; font-size: 9.5px; font-weight: 700; padding: 1px 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.75); }
+  .p-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .p-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-row { display: flex; align-items: center; gap: 6px; }
+  .p-q { font-size: 9.5px; font-weight: 700; padding: 3px 6px; border-radius: 8px; background: var(--p-bg); border: 1px solid var(--p-border); color: var(--p-text-2); white-space: nowrap; }
+  .p-size { font-size: 10.5px; color: var(--p-text-2); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-dl { font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #4285f4; color: #fff; border: 0; white-space: nowrap; }
+  .p-track { flex: 1; height: 6px; border-radius: 999px; background: var(--p-bg); overflow: hidden; }
+  .p-fill { height: 100%; width: 0; background: #4285f4; border-radius: 999px; transition: width 120ms linear; }
+  .p-pct { font-size: 9.5px; font-weight: 700; color: var(--p-text-2); white-space: nowrap; }
+  .p-stop { font-size: 9.5px; font-weight: 600; padding: 4px 8px; border-radius: 999px; background: rgba(242, 139, 130, 0.15); color: #f28b82; white-space: nowrap; }
+  .p-done { font-size: 10.5px; font-weight: 600; color: #34a853; flex: 1; }
+  .p-play { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: #34a853; color: #fff; }
+  .p-play svg { width: 11px; height: 11px; fill: currentColor; }
+  .p-lock { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(242, 139, 130, 0.15); color: #f28b82; white-space: nowrap; }
+  .p-lock svg { width: 10px; height: 10px; fill: currentColor; }
+  .p-toolbar { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--p-border); margin: 2px -12px -12px; padding: 8px 12px; color: var(--p-text-2); }
+  .p-toolbar u { font-size: 10.5px; flex: 1; }
+  .p-toolbar svg { width: 15px; height: 15px; fill: currentColor; }
+  .disclaimer { font-size: 12.5px; color: var(--text-3); margin-top: 14px; }
+  .disclaimer svg { width: 14px; height: 14px; fill: currentColor; display: inline-block; vertical-align: -2px; margin-right: 6px; }
+  .popup [hidden] { display: none !important; }
+  .scene { padding-bottom: 150px; }
+  .scene .popup { bottom: 40px; }
+  .scene .disclaimer { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; }
+
+  /* ── Tarjetas / grids ────────────────────────────────── */
+  .card {
+    background: linear-gradient(180deg, rgba(21, 30, 54, 0.75), rgba(16, 23, 43, 0.75));
+    border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px;
+    transition: transform 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+  }
+  .card:hover { border-color: rgba(138, 180, 248, 0.28); }
+  .card--lift:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .grid { display: grid; gap: 20px; }
+  .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ico {
+    width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent-2); margin-bottom: 16px; flex-shrink: 0;
+  }
+  .ico svg { width: 22px; height: 22px; fill: currentColor; }
+  .ico--g { background: rgba(52, 168, 83, 0.14); color: var(--success-2); }
+  .ico--y { background: rgba(251, 188, 4, 0.12); color: var(--warn); }
+  .ico--r { background: rgba(242, 139, 130, 0.13); color: var(--danger); }
+  .muted { color: var(--text-2); }
+  .small { font-size: 14px; }
+
+  /* Problema / solución */
+  .ps { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: stretch; }
+  .ps__arrow { display: flex; align-items: center; color: var(--accent); }
+  .ps__arrow svg { width: 40px; height: 40px; fill: currentColor; }
+  .ps h3 { margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .ps ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .ps li { display: flex; gap: 10px; color: var(--text-2); font-size: 15px; }
+  .ps li svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 3px; fill: currentColor; }
+  .ps .bad li svg { color: var(--danger); }
+  .ps .good li svg { color: var(--success-2); }
+  .ps .good { border-color: rgba(66, 133, 244, 0.35); background: linear-gradient(180deg, rgba(66, 133, 244, 0.10), rgba(16, 23, 43, 0.8)); }
+  .ps li b { color: var(--text); font-weight: 600; }
+
+  /* Features */
+  .feature h3 { margin-bottom: 8px; }
+  .feature p { color: var(--text-2); font-size: 14.5px; }
+  .feature .benefit { font-size: 13.5px; color: var(--text-3); border-top: 1px dashed var(--line-strong); padding-top: 10px; margin: 14px 0 0; }
+  .feature .benefit strong { color: var(--accent-2); font-weight: 600; }
+  .feature__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .status {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .status--ok { background: rgba(52, 168, 83, 0.14); color: var(--success-2); }
+  .status--part { background: rgba(251, 188, 4, 0.12); color: var(--warn); }
+  .status--no { background: rgba(242, 139, 130, 0.13); color: var(--danger); }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .filter {
+    font: 500 14px var(--font); color: var(--text-2); background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 8px 16px; cursor: pointer;
+    transition: all 150ms;
+  }
+  .filter:hover { color: var(--text); }
+  .filter[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .feature[hidden] { display: none; }
+
+  /* Demo */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border-radius: 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); width: fit-content; max-width: 100%; margin-bottom: 20px; }
+  .tab {
+    font: 600 14px var(--font); color: var(--text-2); background: transparent; border: 0; border-radius: 10px;
+    padding: 10px 16px; cursor: pointer; transition: all 150ms;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected='true'] { background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .shot { border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--line-strong); background: #0e0f12; box-shadow: var(--shadow); }
+  .shot img { width: 100%; height: auto; }
+  .shot-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13.5px; color: var(--text-3); }
+  .demo-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: start; }
+  .panel[hidden] { display: none; }
+
+  .sim { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .sim .popup { width: 100%; max-width: 360px; }
+  .sim-controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .sim-controls .filter { font-size: 13px; padding: 7px 13px; }
+  .sim-note { font-size: 13.5px; color: var(--text-2); text-align: center; min-height: 66px; margin: 0; max-width: 420px; }
+  .phase { display: flex; width: 100%; max-width: 360px; height: 6px; border-radius: 999px; overflow: hidden; gap: 3px; }
+  .phase i { display: block; height: 100%; border-radius: 999px; }
+  .phase i:first-child { flex: 7; background: rgba(66, 133, 244, 0.35); }
+  .phase i:last-child { flex: 3; background: rgba(52, 168, 83, 0.35); }
+  .phase-labels { display: flex; width: 100%; max-width: 360px; font-size: 11.5px; color: var(--text-3); }
+  .phase-labels span:first-child { flex: 7; }
+  .phase-labels span:last-child { flex: 3; text-align: right; }
+
+  /* Pasos */
+  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; position: relative; }
+  .step { position: relative; padding-top: 64px; }
+  .step::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; top: 0; left: 0; width: 44px; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;
+    background: linear-gradient(135deg, #4285f4, #2b5fd0); color: #fff; box-shadow: 0 10px 24px -10px rgba(66, 133, 244, 0.9);
+  }
+  .step::after {
+    content: ''; position: absolute; top: 22px; left: 56px; right: -8px; height: 2px;
+    background: linear-gradient(90deg, rgba(66, 133, 244, 0.5), rgba(66, 133, 244, 0));
+  }
+  .step:last-child::after { display: none; }
+  .step h3 { font-size: 16.5px; margin-bottom: 8px; }
+  .step p { color: var(--text-2); font-size: 14px; }
+  .step .api { font-family: var(--mono); font-size: 11.5px; color: var(--accent-2); display: block; margin-top: 8px; overflow-wrap: anywhere; }
+
+  /* Tecnologías */
+  .tech { display: flex; gap: 16px; align-items: flex-start; }
+  .tech .ico { margin: 0; }
+  .tech h3 { font-size: 16px; margin-bottom: 4px; }
+  .tech p { font-size: 14px; color: var(--text-2); margin: 0; }
+  .tech .where { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--text-3); margin-top: 6px; overflow-wrap: anywhere; }
+
+  /* Arquitectura */
+  .arch { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; align-items: start; }
+  .tree {
+    font-family: var(--mono); font-size: 13px; line-height: 1.75; color: var(--text-2);
+    background: #0a0f1d; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 22px; margin: 0;
+    overflow-x: auto; white-space: pre;
+  }
+  .tree b { color: var(--accent-2); font-weight: 600; }
+  .tree em { color: var(--text-3); font-style: normal; }
+  .tree .f { color: var(--text); }
+  .groups { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .group { padding: 18px; }
+  .group h3 { font-size: 14.5px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .group h3 i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .group li { font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  .group li code { font-size: 12px; }
+
+  /* Diagrama */
+  .diagram-wrap { background: #0a0f1d; border: 1px solid var(--line); border-radius: var(--radius-xl); padding: 16px; overflow-x: auto; }
+  .diagram { width: 100%; min-width: 820px; height: auto; display: block; }
+  .diagram .box { fill: #121a30; stroke: rgba(148, 170, 220, 0.28); stroke-width: 1.2; }
+  .diagram .box--accent { fill: rgba(66, 133, 244, 0.12); stroke: rgba(66, 133, 244, 0.7); }
+  .diagram .box--green { fill: rgba(52, 168, 83, 0.10); stroke: rgba(52, 168, 83, 0.6); }
+  .diagram .box--api { fill: #0f1526; stroke-dasharray: 4 4; }
+  .diagram .t { fill: #eef2fb; font: 600 15px var(--font); }
+  .diagram .s { fill: #a9b4cc; font: 12px var(--font); }
+  .diagram .m { fill: #8ab4f8; font: 600 11px var(--mono); }
+  .diagram .lbl { fill: #c4cde0; font: 11.5px var(--mono); }
+  .diagram .edge { fill: none; stroke: rgba(138, 180, 248, 0.6); stroke-width: 1.6; }
+  .diagram .edge--g { stroke: rgba(129, 201, 149, 0.7); }
+  .diagram .edge--y { stroke: rgba(251, 188, 4, 0.7); }
+  .diagram .lblbg { fill: #0a0f1d; }
+  .flowing { stroke-dasharray: 6 6; animation: dash 1.2s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset: -12; } }
+  .msg-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .msg-table th, .msg-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .msg-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); font-weight: 600; }
+  .msg-table td:first-child { white-space: nowrap; }
+  .msg-table td { color: var(--text-2); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(16, 23, 43, 0.6); margin-top: 24px; }
+  .route { font-family: var(--mono); font-size: 12px; color: var(--accent-2); white-space: nowrap; }
+
+  /* Permisos */
+  .perm { padding: 20px; }
+  .perm__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .perm__head code { font-size: 14px; }
+  .perm p { font-size: 14px; color: var(--text-2); margin: 0; }
+  .perm .where { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--text-3); margin-top: 8px; overflow-wrap: anywhere; }
+  .used { font-size: 11px; font-weight: 700; color: var(--success-2); background: rgba(52, 168, 83, 0.12); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .security { margin-top: 28px; }
+  .check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .check-list li { display: flex; gap: 12px; font-size: 14.5px; color: var(--text-2); }
+  .check-list li svg { width: 20px; height: 20px; flex-shrink: 0; fill: var(--success-2); margin-top: 2px; }
+  .check-list li.warn svg { fill: var(--warn); }
+  .check-list b { color: var(--text); font-weight: 600; }
+
+  /* Instalación */
+  .install { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .ol { list-style: none; counter-reset: o; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .ol li { counter-increment: o; display: flex; gap: 14px; font-size: 15px; color: var(--text-2); }
+  .ol li::before {
+    content: counter(o); flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent-2); font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .code {
+    position: relative; background: #0a0f1d; border: 1px solid var(--line); border-radius: var(--radius-md);
+    padding: 14px 16px; padding-right: 92px; font-family: var(--mono); font-size: 13px; color: #d6e2ff; margin: 10px 0 18px;
+    overflow-x: auto; white-space: pre;
+  }
+  .code .c { color: var(--text-3); }
+  .copy {
+    position: absolute; top: 8px; right: 8px; font: 600 12px var(--font); padding: 6px 10px; border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06); color: var(--text-2); border: 1px solid var(--line-strong); cursor: pointer;
+  }
+  .copy:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+  .note {
+    display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius-md); font-size: 14px; color: var(--text-2);
+    background: rgba(251, 188, 4, 0.07); border: 1px solid rgba(251, 188, 4, 0.25); margin-top: 16px;
+  }
+  .note svg { width: 20px; height: 20px; flex-shrink: 0; fill: var(--warn); }
+  .note--info { background: rgba(66, 133, 244, 0.07); border-color: rgba(66, 133, 244, 0.28); }
+  .note--info svg { fill: var(--accent-2); }
+
+  /* Descargar */
+  .download-cta {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center; padding: 32px;
+    border-color: rgba(66, 133, 244, 0.4);
+    background: radial-gradient(600px 240px at 0% 0%, rgba(66, 133, 244, 0.18), transparent 70%), linear-gradient(180deg, rgba(21, 30, 54, 0.9), rgba(16, 23, 43, 0.9));
+  }
+  .download-cta__icon { width: 88px; height: 88px; border-radius: 22px; box-shadow: 0 16px 40px -12px rgba(66, 133, 244, 0.8); }
+  .download-cta__actions { display: flex; flex-direction: column; gap: 10px; }
+  @media (max-width: 960px) {
+    .download-cta { grid-template-columns: 1fr; text-align: left; }
+    .download-cta__actions { flex-direction: row; flex-wrap: wrap; }
+  }
+  @media (max-width: 640px) {
+    .download-cta { padding: 22px; }
+    .download-cta__actions .btn { flex: 1 1 100%; }
+  }
+
+  /* Limitaciones */
+  .limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 0; }
+  .limits li { display: flex; gap: 12px; padding: 16px 18px; border-radius: var(--radius-md); background: rgba(16, 23, 43, 0.7); border: 1px solid var(--line); font-size: 14px; color: var(--text-2); }
+  .limits li svg { width: 18px; height: 18px; fill: var(--danger); flex-shrink: 0; margin-top: 2px; }
+  .limits li.p svg { fill: var(--warn); }
+  .limits b { color: var(--text); font-weight: 600; }
+
+  /* Info */
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+  .fact { background: var(--surface); padding: 22px; }
+  .fact dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); font-weight: 600; margin-bottom: 6px; }
+  .fact dd { margin: 0; font-size: 17px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+  .fact dd small { display: block; font-size: 12.5px; color: var(--text-3); font-weight: 400; margin-top: 2px; }
+
+  /* Recursos */
+  .res { display: flex; gap: 14px; align-items: flex-start; color: var(--text); padding: 20px; }
+  .res:hover { text-decoration: none; }
+  .res .ico { margin: 0; width: 40px; height: 40px; }
+  .res h3 { font-size: 15.5px; margin-bottom: 4px; }
+  .res p { font-size: 13.5px; color: var(--text-2); margin: 0; }
+  .res .path { font-family: var(--mono); font-size: 11.5px; color: var(--text-3); display: block; margin-top: 6px; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--line); padding: 56px 0 40px; background: rgba(5, 8, 16, 0.6); }
+  .foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; }
+  .foot h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 14px; }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .foot ul a { color: var(--text-2); font-size: 14.5px; }
+  .foot ul a:hover { color: var(--text); }
+  .foot p { color: var(--text-2); font-size: 14.5px; max-width: 380px; }
+  .foot__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 13px; color: var(--text-3); }
+
+  .to-top {
+    position: fixed; right: 20px; bottom: 20px; z-index: 40; width: 46px; height: 46px; border-radius: 14px;
+    background: var(--accent); color: #fff; border: 0; cursor: pointer; box-shadow: 0 10px 30px -10px rgba(66, 133, 244, 0.9);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity 200ms, transform 200ms;
+  }
+  .to-top svg { width: 22px; height: 22px; fill: currentColor; }
+  .to-top.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+
+  /* Animación de entrada */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); }
+  .reveal.is-in { opacity: 1; transform: none; }
+  .no-js .reveal { opacity: 1; transform: none; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line-strong), transparent); }
+
+  /* ── Responsive ──────────────────────────────────────── */
+  @media (max-width: 1080px) {
+    .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
+    .step:nth-child(3)::after { display: none; }
+    .grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 960px) {
+    section { padding: 72px 0; }
+    .hero__grid, .demo-grid, .arch, .install { grid-template-columns: minmax(0, 1fr); }
+    .hero__grid { gap: 40px; }
+    .scene { max-width: 560px; margin: 0 auto; width: 100%; }
+    .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ps { grid-template-columns: minmax(0, 1fr); }
+    .download-cta { grid-template-columns: minmax(0, 1fr); }
+    .ps__arrow { justify-content: center; transform: rotate(90deg); }
+    .foot { grid-template-columns: 1fr 1fr; }
+    .foot > div:first-child { grid-column: 1 / -1; }
+  }
+  @media (max-width: 640px) {
+    .container { padding: 0 16px; }
+    section { padding: 60px 0; }
+    .hero { padding: 40px 0 64px; }
+    .lead { font-size: 16.5px; }
+    .grid--2, .grid--3, .grid--4, .groups, .limits { grid-template-columns: minmax(0, 1fr); }
+    .steps { grid-template-columns: minmax(0, 1fr); }
+    .scene .disclaimer { position: static; margin-top: 14px; }
+    .step { padding: 0 0 0 60px; min-height: 44px; }
+    .step::after { display: none !important; }
+    .scene { padding-bottom: 0 !important; }
+    .scene .popup { position: relative; right: auto; bottom: auto; margin: -40px auto 0; width: calc(100% - 24px); }
+    .callout { display: none; }
+    .hero__actions .btn { flex: 1 1 100%; }
+    .tab { padding: 9px 12px; font-size: 13px; }
+    .facts { grid-template-columns: minmax(0, 1fr); }
+    .foot { grid-template-columns: minmax(0, 1fr); }
+    .hero__badge { flex-wrap: wrap; }
+    .tabs { width: 100%; }
+    .card { padding: 20px; }
+    .code { padding-right: 16px; padding-top: 44px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body class="no-js">
+<a class="skip-link" href="#inicio">Saltar al contenido</a>
+
+<!-- Sprite de iconos (Material Icons, mismos trazos que usa la extensión) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></symbol>
+    <symbol id="i-delete" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M12 17a2 2 0 002-2 2 2 0 00-2-2 2 2 0 00-2 2 2 2 0 002 2zm6-9h-1V6a5 5 0 00-10 0v2H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V10a2 2 0 00-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1S15.1 4.29 15.1 6v2H8.9V6z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol>
+    <symbol id="i-stream" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4zm13 0v6l5-3z"/></symbol>
+    <symbol id="i-build" viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></symbol>
+    <symbol id="i-tune" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></symbol>
+    <symbol id="i-touch" viewBox="0 0 24 24"><path d="M9 11.24V7.5a2.5 2.5 0 015 0v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 .3a12 12 0 00-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 016 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 011.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0012 .3"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></symbol>
+    <symbol id="i-translate" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></symbol>
+    <symbol id="i-badge" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2V9h-2V7h4v10z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></symbol>
+    <symbol id="i-net" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm6.93 6h-2.95a15.65 15.65 0 00-1.38-3.56A8.03 8.03 0 0118.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A7.987 7.987 0 015.08 16zm2.95-8H5.08a7.987 7.987 0 014.33-3.56A15.65 15.65 0 008.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 01-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ═════════════ NAVEGACIÓN ═════════════ -->
+<header class="nav" id="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="#inicio" aria-label="Super Video Downloader — inicio">
+      <img src="../assets/icons/icon128.png" alt="" width="32" height="32" />
+      <span>Super Video Downloader</span>
+    </a>
+    <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navMenu" aria-label="Abrir menú">
+      <svg class="icon-menu"><use href="#i-menu"/></svg>
+      <svg class="icon-close"><use href="#i-close"/></svg>
+    </button>
+    <nav class="nav__menu" id="navMenu" aria-label="Secciones">
+      <ul class="nav__links">
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#funciones">Funciones</a></li>
+        <li><a href="#como-funciona">Cómo funciona</a></li>
+        <li><a href="#arquitectura">Arquitectura</a></li>
+        <li><a href="#permisos">Permisos</a></li>
+        <li><a href="#instalacion">Instalación</a></li>
+      </ul>
+      <a class="btn btn--primary btn--sm nav__cta" href="#descargar">
+        <svg><use href="#i-download"/></svg> Descargar extensión
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<!-- ═════════════ HERO ═════════════ -->
+<section class="hero" id="inicio">
+  <div class="container hero__grid">
+    <div>
+      <div class="hero__badge reveal"><span>v1.0.0</span> Extensión Manifest V3 · Chrome, Edge, Brave y Opera</div>
+      <h1 class="reveal">Descarga el video de la página que estás viendo, <span class="grad">incluidos streams HLS</span>, sin salir del navegador.</h1>
+      <p class="lead reveal">Super Video Downloader detecta los <code>&lt;video&gt;</code> de enlace directo y los manifiestos <code>.m3u8</code> que carga la pestaña, y los guarda con un clic. Los streams HLS sin cifrar se reconstruyen en un único <code>.mp4</code> con <strong>ffmpeg.wasm</strong>, localmente, sin servidores intermedios ni programas extra.</p>
+      <div class="hero__actions reveal">
+        <a class="btn btn--primary" href="#descargar"><svg><use href="#i-download"/></svg> Descargar extensión</a>
+        <a class="btn btn--ghost" href="#demo"><svg><use href="#i-play"/></svg> Ver la demo</a>
+      </div>
+      <ul class="chips reveal" aria-label="Características verificadas">
+        <li class="chip"><i></i>Manifest V3</li>
+        <li class="chip"><i></i>JavaScript nativo, sin bundler</li>
+        <li class="chip"><i class="g"></i>ffmpeg.wasm 0.12</li>
+        <li class="chip"><i class="g"></i>Procesamiento 100 % local</li>
+        <li class="chip"><i class="y"></i>No elude DRM</li>
+        <li class="chip"><i></i>Licencia MIT</li>
+      </ul>
+    </div>
+
+    <div class="scene reveal" aria-label="Ilustración: botón flotante sobre un video y popup de la extensión">
+      <div class="browser">
+        <div class="browser__bar">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="url">https://sitio-de-ejemplo.test/webinar</div>
+          <div class="ext-icon" title="Badge con el número de videos detectados">
+            <img src="../assets/icons/icon32.png" alt="" width="24" height="24" />
+            <b>2</b>
+          </div>
+        </div>
+        <div class="browser__page">
+          <div class="fake-video">
+            <div class="overlay-btn" title="Botón flotante de overlay.js"><svg><use href="#i-download"/></svg></div>
+            <div class="fake-video__play"><svg><use href="#i-play"/></svg></div>
+            <div class="fake-video__bar"></div>
+            <span class="callout" style="top:12px;left:54px">Botón flotante → abre el popup</span>
+          </div>
+          <div class="page-lines"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+
+      <div class="popup" aria-hidden="true">
+        <div class="p-head">
+          <svg><use href="#i-download"/></svg><strong>Super Video Downloader</strong>
+          <span class="p-ico"><svg><use href="#i-refresh"/></svg></span><span class="p-ico"><svg><use href="#i-settings"/></svg></span>
+        </div>
+        <div class="p-site">
+          <span class="p-fav">SE</span>
+          <div><small>Sitio actual</small><span class="d">sitio-de-ejemplo.test</span></div>
+          <span class="p-count">2</span>
+        </div>
+        <div class="p-item">
+          <div class="p-thumb" style="background:#3b5a96"><svg><use href="#i-play"/></svg><em>12:05</em></div>
+          <div class="p-body">
+            <div class="p-name">Webinar.mp4</div>
+            <div class="p-row"><span class="p-track"><span class="p-fill" id="heroFill" style="width:63%"></span></span><span class="p-pct" id="heroPct">63% · 1.8 MB/s</span><span class="p-stop">Detener</span></div>
+          </div>
+        </div>
+        <div class="p-item">
+          <div class="p-thumb" style="background:#3f7a52"><svg><use href="#i-play"/></svg><em>04:12</em></div>
+          <div class="p-body">
+            <div class="p-name">Demo de producto.mp4</div>
+            <div class="p-row"><span class="p-q">1920×1080</span><span class="p-size">86.4 MB</span><span class="p-dl">Download</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="disclaimer"><svg><use href="#i-info"/></svg>Recreación en HTML/CSS con datos de ejemplo, basada en <code>popup/popup.css</code> y <code>overlay.js</code>.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═════════════ DEMO ═════════════ -->
+<section id="demo">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Demostración visual</p>
+      <h2>El popup, la reconstrucción HLS y la configuración</h2>
+      <p class="lead">Las imágenes son los recursos de la ficha de tienda incluidos en <code>store-assets/</code>. A la derecha, una tarjeta interactiva recorre los estados reales que puede tener cada video en el popup.</p>
+    </div>
+
+    <div class="demo-grid">
+      <div class="reveal">
+        <div class="tabs" role="tablist" aria-label="Capturas">
+          <button class="tab" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="true">Videos detectados</button>
+          <button class="tab" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false" tabindex="-1">Progreso HLS</button>
+          <button class="tab" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false" tabindex="-1">Opciones e historial</button>
+          <button class="tab" role="tab" id="tab-4" aria-controls="panel-4" aria-selected="false" tabindex="-1">Promocional</button>
+        </div>
+        <div class="panel" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
+          <figure class="shot" style="margin:0"><img src="../store-assets/screenshot-1-popup.png" alt="Popup con tres videos detectados: uno 1920×1080 de 86.4 MB, otro con selector MP4 720P y otro completado con botón Reproducir" width="1280" height="800" loading="lazy" /></figure>
+          <div class="shot-caption"><span>Lista de videos con selector de calidad, tamaño, copiar URL y descarga.</span><code>store-assets/screenshot-1-popup.png</code></div>
+        </div>
+        <div class="panel" id="panel-2" role="tabpanel" aria-labelledby="tab-2" hidden>
+          <figure class="shot" style="margin:0"><img src="../store-assets/screenshot-2-progress.png" alt="Popup mostrando la reconstrucción de un stream HLS al 63 % a 1.8 MB/s con botón Detener" width="1280" height="800" loading="lazy" /></figure>
+          <div class="shot-caption"><span>Reconstrucción de un stream HLS con porcentaje, velocidad y cancelar.</span><code>store-assets/screenshot-2-progress.png</code></div>
+        </div>
+        <div class="panel" id="panel-3" role="tabpanel" aria-labelledby="tab-3" hidden>
+          <figure class="shot" style="margin:0"><img src="../store-assets/screenshot-3-options.png" alt="Página de configuración con subcarpeta de descarga, interruptores, tema, idioma e historial" width="1280" height="800" loading="lazy" /></figure>
+          <div class="shot-caption"><span>Página de opciones: subcarpeta, nombre automático, notificaciones, tema, idioma e historial.</span><code>store-assets/screenshot-3-options.png</code></div>
+        </div>
+        <div class="panel" id="panel-4" role="tabpanel" aria-labelledby="tab-4" hidden>
+          <figure class="shot" style="margin:0"><img src="../store-assets/promo-marquee.png" alt="Imagen de marquesina: Descarga videos, incluidos streams HLS, sin instalar nada más" width="1400" height="560" loading="lazy" /></figure>
+          <div class="shot-caption"><span>Imagen de marquesina de la ficha (1400×560).</span><code>store-assets/promo-marquee.png</code></div>
+        </div>
+        <p class="disclaimer"><svg><use href="#i-info"/></svg>Las capturas se generaron a partir de los mockups HTML de <code>store-assets/mockup-*.html</code> con nombres y sitios de ejemplo; no corresponden a una sesión con un sitio real.</p>
+      </div>
+
+      <div class="card sim reveal" aria-labelledby="simTitle">
+        <h3 id="simTitle" style="align-self:flex-start">Ciclo de vida de una tarjeta</h3>
+        <div class="popup" id="simPopup">
+          <div class="p-item" id="simItem">
+            <div class="p-thumb" style="background:#5a3f96"><svg><use href="#i-play"/></svg><em>12:05</em></div>
+            <div class="p-body">
+              <div class="p-row" style="min-width:0">
+                <div class="p-name" id="simName">Webinar.mp4</div>
+                <span class="p-lock" id="simLock" hidden><svg><use href="#i-lock"/></svg>No disponible para descarga directa</span>
+              </div>
+              <div class="p-row" id="simReady"><span class="p-q" id="simQ">MP4 720P ▾</span><span class="p-size" id="simSize">Desconocido</span><svg width="14" height="14" fill="#9aa0a6" aria-hidden="true"><use href="#i-copy"/></svg><span class="p-dl" id="simDl">Download</span></div>
+              <div class="p-row" id="simProg" hidden><span class="p-track"><span class="p-fill" id="simFill"></span></span><span class="p-pct" id="simPct">0%</span><span class="p-stop">Detener</span></div>
+              <div class="p-row" id="simDone" hidden><span class="p-done">Completado</span><span class="p-play"><svg><use href="#i-play"/></svg>Reproducir</span><svg width="14" height="14" fill="#9aa0a6" aria-hidden="true"><use href="#i-folder"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="phase" aria-hidden="true"><i></i><i></i></div>
+        <div class="phase-labels" aria-hidden="true"><span>0–70 %: descarga de segmentos</span><span>70–100 %: remux</span></div>
+        <div class="sim-controls" role="group" aria-label="Estados de la tarjeta">
+          <button class="filter" type="button" data-sim="ready" aria-pressed="true">Detectado</button>
+          <button class="filter" type="button" data-sim="hls" aria-pressed="false">Descargar HLS</button>
+          <button class="filter" type="button" data-sim="done" aria-pressed="false">Completado</button>
+          <button class="filter" type="button" data-sim="locked" aria-pressed="false">Protegido (blob:)</button>
+        </div>
+        <p class="sim-note" id="simNote" aria-live="polite">Stream HLS detectado por red. El selector muestra el formato de salida (MP4) y la calidad deducida de la URL.</p>
+        <p class="disclaimer" style="margin:0"><svg><use href="#i-info"/></svg>Simulación visual: no descarga nada. Reproduce los estados y el reparto de progreso de <code>offscreen.js</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ PROBLEMA / SOLUCIÓN ═════════════ -->
+<section id="problema">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Problema y solución</p>
+      <h2>Muchos reproductores esconden la URL real del video</h2>
+      <p class="lead">Un reproductor basado en <code>hls.js</code> reproduce un <code>blob:</code> generado con MediaSource, así que el DOM nunca muestra el archivo. La extensión lo resuelve observando la red, no adivinando.</p>
+    </div>
+    <div class="ps">
+      <div class="card bad reveal">
+        <h3><span class="ico ico--r" style="margin:0"><svg><use href="#i-x"/></svg></span>Sin la extensión</h3>
+        <ul>
+          <li><svg><use href="#i-x"/></svg><span>El <code>&lt;video&gt;</code> muestra un <code>blob:</code>; el manifiesto <code>.m3u8</code> solo existe en el tráfico de red.</span></li>
+          <li><svg><use href="#i-x"/></svg><span>Un HLS son decenas de segmentos <code>.ts</code> sueltos que hay que unir con herramientas externas.</span></li>
+          <li><svg><use href="#i-x"/></svg><span>Las calidades alternativas quedan repartidas entre <code>&lt;source&gt;</code>, variantes y enlaces "720p / 1080p".</span></li>
+          <li><svg><use href="#i-x"/></svg><span>Muchos CDN rechazan las peticiones que no llevan el <code>Referer</code> del reproductor.</span></li>
+        </ul>
+      </div>
+      <div class="ps__arrow" aria-hidden="true"><svg><use href="#i-arrow"/></svg></div>
+      <div class="card good reveal">
+        <h3><span class="ico" style="margin:0"><svg><use href="#i-check"/></svg></span>Con Super Video Downloader</h3>
+        <ul>
+          <li><svg><use href="#i-check"/></svg><span><b>Detección por red:</b> <code>webRequest</code> registra cada <code>.m3u8</code>/<code>.mpd</code> que pide la pestaña.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Un solo .mp4:</b> ffmpeg.wasm concatena los segmentos con <code>-c copy</code>, sin recodificar.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Todas las calidades en un selector,</b> agrupadas por video; varios reproductores, varias tarjetas.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Cabeceras correctas:</b> una regla temporal de <code>declarativeNetRequest</code> fija <code>Referer</code>/<code>Origin</code> y se borra al terminar.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═════════════ FUNCIONES ═════════════ -->
+<section id="funciones">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Funcionalidades</p>
+      <h2>Qué hace, comprobado en el código</h2>
+      <p class="lead">Cada tarjeta indica el archivo donde está implementada. Lo parcial o no soportado también aparece, para no prometer de más.</p>
+    </div>
+
+    <div class="filter-row reveal" role="group" aria-label="Filtrar funcionalidades">
+      <button class="filter" type="button" data-filter="all" aria-pressed="true">Todas</button>
+      <button class="filter" type="button" data-filter="detect" aria-pressed="false">Detección</button>
+      <button class="filter" type="button" data-filter="download" aria-pressed="false">Descarga</button>
+      <button class="filter" type="button" data-filter="ui" aria-pressed="false">Interfaz</button>
+      <button class="filter" type="button" data-filter="config" aria-pressed="false">Configuración</button>
+    </div>
+
+    <div class="grid grid--3" id="featureGrid">
+      <article class="card card--lift feature reveal" data-cat="detect">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-search"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Detección en el DOM</h3>
+        <p>Escanea <code>&lt;video&gt;</code>, sus <code>&lt;source&gt;</code> y, si no hay reproductor, enlaces <code>&lt;a&gt;</code> a archivos de video. Un <code>MutationObserver</code> vuelve a escanear en sitios de una sola página.</p>
+        <p class="benefit"><strong>Beneficio:</strong> los videos aparecen solos, incluso si se cargan después.<br /><code>scripts/detector.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="detect">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-net"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Detección de streams por red</h3>
+        <p>El service worker escucha <code>webRequest.onBeforeRequest</code> y guarda por pestaña cada URL <code>.m3u8</code> o <code>.mpd</code>. Se limpia al navegar o cerrar la pestaña.</p>
+        <p class="benefit"><strong>Beneficio:</strong> encuentra el video aunque el reproductor lo oculte tras un <code>blob:</code>.<br /><code>background.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="download">
+        <div class="feature__top"><div class="ico ico--g"><svg><use href="#i-stream"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Reconstrucción HLS → MP4</h3>
+        <p>En un documento offscreen, descarga los segmentos, los escribe en el sistema de archivos virtual de ffmpeg.wasm y los une con el demuxer <code>concat</code>. Una instancia nueva por descarga, terminada al final para liberar memoria.</p>
+        <p class="benefit"><strong>Beneficio:</strong> un archivo reproducible, sin instalar ffmpeg.<br /><code>offscreen/offscreen.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="download">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-download"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Descarga directa con un clic</h3>
+        <p>Los archivos con URL <code>http(s)</code> o <code>data:</code> se guardan con <code>chrome.downloads</code>, respetando la subcarpeta y el modo "Guardar como". También se puede copiar la URL.</p>
+        <p class="benefit"><strong>Beneficio:</strong> sin pasos intermedios para los casos simples.<br /><code>scripts/downloader.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="ui">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-tune"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Selector de calidad</h3>
+        <p>Agrupa las variantes de un mismo video (mismo <code>&lt;video&gt;</code> o misma carpeta del CDN) en una tarjeta con un desplegable. Etiquetas como <code>1920×1080</code>, <code>720P</code> o <code>MP4 1080P</code>.</p>
+        <p class="benefit"><strong>Beneficio:</strong> eliges la resolución en lugar de recibir solo la que se está reproduciendo.<br /><code>popup/popup.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="ui">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-touch"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Botón flotante sobre el video</h3>
+        <p>Dibuja un botón en la esquina de cada <code>&lt;video&gt;</code> de al menos 80 px, dentro de un Shadow DOM cerrado, también en iframes y Shadow DOM abiertos. Al pulsarlo abre el popup y despliega el selector de calidad.</p>
+        <p class="benefit"><strong>Beneficio:</strong> acceso directo desde el propio reproductor.<br /><code>overlay.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="ui">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-layers"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Menú contextual</h3>
+        <p>Con clic derecho en cualquier parte de la página aparece un submenú "Super Video Downloader" con los videos de la pestaña, marcados como HLS o DASH cuando corresponde.</p>
+        <p class="benefit"><strong>Beneficio:</strong> funciona aunque una capa tape el reproductor.<br /><code>background.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="ui">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-badge"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Badge y progreso persistente</h3>
+        <p>El icono muestra el número de videos de la pestaña (azul) y el porcentaje de la reconstrucción HLS (amarillo). Si cierras y reabres el popup, recupera el progreso en curso.</p>
+        <p class="benefit"><strong>Beneficio:</strong> sabes qué hay y cómo va sin abrir nada.<br /><code>background.js · popup.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="download">
+        <div class="feature__top"><div class="ico ico--g"><svg><use href="#i-play"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Reproducir, abrir carpeta y notificar</h3>
+        <p>Al terminar, la tarjeta ofrece "Reproducir" (<code>downloads.open</code>) y "Mostrar en carpeta". Si está activado, una notificación avisa aunque el popup esté cerrado.</p>
+        <p class="benefit"><strong>Beneficio:</strong> cierra el ciclo sin buscar el archivo.<br /><code>popup.js · background.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="config">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-history"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Historial de descargas</h3>
+        <p>Registra fecha, archivo, tamaño y sitio de cada descarga completada (máximo 200 entradas), con borrado individual o total.</p>
+        <p class="benefit"><strong>Beneficio:</strong> recuerdas qué bajaste y de dónde.<br /><code>scripts/storage.js · options/</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="config">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-settings"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Opciones y tema</h3>
+        <p>Subcarpeta dentro de Descargas (por defecto <code>SuperVideoDownloader</code>), nombre automático, notificaciones, actualización automática y tema oscuro o claro.</p>
+        <p class="benefit"><strong>Beneficio:</strong> la extensión se adapta a tu forma de organizar archivos.<br /><code>options/options.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="config">
+        <div class="feature__top"><div class="ico"><svg><use href="#i-translate"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Español e inglés</h3>
+        <p>Diccionario propio con atributos <code>data-i18n</code> para el popup y las opciones. Algunos mensajes de estado del popup están escritos solo en español.</p>
+        <p class="benefit"><strong>Beneficio:</strong> interfaz en el idioma del usuario.<br /><code>scripts/utils.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="detect">
+        <div class="feature__top"><div class="ico ico--y"><svg><use href="#i-filter"/></svg></div><span class="status status--ok">Implementado</span></div>
+        <h3>Filtro de anuncios cortos</h3>
+        <p>Si en la página hay al menos un video de 25 s o más, descarta los clips de menos de 25 s. Si todo es corto, lo muestra igual.</p>
+        <p class="benefit"><strong>Beneficio:</strong> menos ruido de banners de video.<br /><code>scripts/detector.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="detect">
+        <div class="feature__top"><div class="ico ico--r"><svg><use href="#i-lock"/></svg></div><span class="status status--ok">Por diseño</span></div>
+        <h3>Respeto por el DRM</h3>
+        <p>Las fuentes <code>blob:</code>/<code>mediasource:</code> se listan con la etiqueta "No disponible para descarga directa" y el botón deshabilitado. Los HLS con <code>#EXT-X-KEY</code> devuelven un error explícito.</p>
+        <p class="benefit"><strong>Beneficio:</strong> transparencia, sin archivos corruptos ni elusión de protecciones.<br /><code>detector.js · hls-parser.js</code></p>
+      </article>
+      <article class="card card--lift feature reveal" data-cat="download">
+        <div class="feature__top"><div class="ico ico--y"><svg><use href="#i-stream"/></svg></div><span class="status status--part">Solo detección</span></div>
+        <h3>Streams DASH (.mpd)</h3>
+        <p>Se detectan por red y aparecen en el popup y el menú contextual, pero al descargar el popup responde "DASH todavía no está soportado (solo HLS por ahora)".</p>
+        <p class="benefit"><strong>Estado:</strong> pendiente de implementar.<br /><code>popup.js</code></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ CÓMO FUNCIONA ═════════════ -->
+<section id="como-funciona">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Cómo funciona</p>
+      <h2>De la página al archivo en cinco pasos</h2>
+      <p class="lead">El flujo real que siguen el content script, el service worker, el popup y el documento offscreen.</p>
+    </div>
+    <ol class="steps" style="list-style:none;margin:0;padding:0">
+      <li class="step reveal">
+        <h3>Abres una página con video</h3>
+        <p>Los content scripts escanean el DOM y el service worker anota los manifiestos que pide la pestaña. El badge muestra cuántos videos hay.</p>
+        <span class="api">document_idle · webRequest</span>
+      </li>
+      <li class="step reveal">
+        <h3>Abres la extensión</h3>
+        <p>Desde el icono de la barra, el botón flotante del video o el menú contextual.</p>
+        <span class="api">action · contextMenus</span>
+      </li>
+      <li class="step reveal">
+        <h3>Eliges la calidad</h3>
+        <p>El popup combina lo del DOM (con tamaño vía <code>HEAD</code>) y los streams de red, agrupados por video.</p>
+        <span class="api">SVD_GET_VIDEOS · SVD_GET_STREAMS</span>
+      </li>
+      <li class="step reveal">
+        <h3>Descargas</h3>
+        <p>Directo: <code>chrome.downloads</code>. HLS: ffmpeg.wasm en offscreen, con barra de progreso, velocidad y botón Detener.</p>
+        <span class="api">downloads · offscreen</span>
+      </li>
+      <li class="step reveal">
+        <h3>Reproduces o abres la carpeta</h3>
+        <p>La descarga queda en el historial y, si lo activaste, recibes una notificación.</p>
+        <span class="api">downloads.open · notifications</span>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═════════════ TECNOLOGÍAS ═════════════ -->
+<section id="tecnologias">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Tecnologías</p>
+      <h2>Stack mínimo, sin frameworks ni bundler</h2>
+      <p class="lead">Los mismos módulos (<code>utils.js</code>, <code>storage.js</code>) se cargan como scripts clásicos en los cuatro contextos de la extensión, incluido el service worker vía <code>importScripts</code>.</p>
+    </div>
+    <div class="grid grid--3">
+      <div class="card tech reveal"><div class="ico"><svg><use href="#i-code"/></svg></div><div><h3>JavaScript nativo</h3><p>Todo el runtime: IIFE con <code>'use strict'</code> y namespaces globales (<code>SVDUtils</code>, <code>SVDStorage</code>, <code>SVDDetector</code>, <code>SVDHls</code>).</p><span class="where">background.js · content.js · scripts/*</span></div></div>
+      <div class="card tech reveal"><div class="ico"><svg><use href="#i-layers"/></svg></div><div><h3>HTML5 y CSS3</h3><p>Popup y opciones con variables CSS, estilo Material oscuro con variante clara e iconos SVG en línea.</p><span class="where">popup/ · options/</span></div></div>
+      <div class="card tech reveal"><div class="ico"><svg><use href="#i-shield"/></svg></div><div><h3>Manifest V3</h3><p>Service worker, content scripts en <code>&lt;all_urls&gt;</code>, CSP con <code>wasm-unsafe-eval</code>. Chrome 109 o superior.</p><span class="where">manifest.json</span></div></div>
+      <div class="card tech reveal"><div class="ico ico--g"><svg><use href="#i-stream"/></svg></div><div><h3>ffmpeg.wasm 0.12</h3><p>Núcleo <code>@ffmpeg/core</code> 0.12.9 empaquetado en local (≈32 MB de <code>.wasm</code>), sin CDN. Une segmentos sin recodificar.</p><span class="where">vendor/ffmpeg/ · offscreen/</span></div></div>
+      <div class="card tech reveal"><div class="ico"><svg><use href="#i-net"/></svg></div><div><h3>Chrome Extensions API</h3><p><code>downloads</code>, <code>webRequest</code>, <code>webNavigation</code>, <code>declarativeNetRequest</code>, <code>offscreen</code>, <code>contextMenus</code>, <code>notifications</code>, <code>storage</code>, <code>action</code>, <code>tabs</code>.</p><span class="where">background.js · popup.js</span></div></div>
+      <div class="card tech reveal"><div class="ico"><svg><use href="#i-search"/></svg></div><div><h3>APIs web del navegador</h3><p><code>MutationObserver</code>, Shadow DOM, <code>requestAnimationFrame</code>, <code>fetch</code> + <code>AbortController</code>, Blob URLs, Clipboard y <code>showPicker()</code>.</p><span class="where">overlay.js · detector.js · offscreen.js</span></div></div>
+      <div class="card tech reveal"><div class="ico ico--y"><svg><use href="#i-doc"/></svg></div><div><h3>Parser HLS propio</h3><p>Parser mínimo según RFC 8216: distingue playlist maestra y de medios, resuelve URLs relativas y rechaza cifrado y <code>BYTERANGE</code>.</p><span class="where">scripts/hls-parser.js</span></div></div>
+      <div class="card tech reveal"><div class="ico ico--y"><svg><use href="#i-build"/></svg></div><div><h3>Bash y PowerShell</h3><p>Scripts para abrir <code>chrome://extensions</code>, lanzar un perfil de prueba y empaquetar el <code>.zip</code> con validaciones.</p><span class="where">tools/1-install · 2-test-extension · 3-build</span></div></div>
+      <div class="card tech reveal"><div class="ico ico--y"><svg><use href="#i-code"/></svg></div><div><h3>Python</h3><p><code>gen_icons.py</code> genera los iconos con Pillow; <code>_cdp_loader.py</code> carga la extensión por Chrome DevTools Protocol con un WebSocket hecho a mano.</p><span class="where">gen_icons.py · tools/_cdp_loader.py</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ ARQUITECTURA ═════════════ -->
+<section id="arquitectura">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Arquitectura</p>
+      <h2>Estructura del proyecto</h2>
+      <p class="lead">Archivos relevantes agrupados por responsabilidad. <code>tools/</code>, la documentación y los recursos de tienda no se incluyen en el paquete final.</p>
+    </div>
+    <div class="arch">
+<pre class="tree reveal" aria-label="Árbol de directorios"><b>super-video-downloader/</b>
+├── <span class="f">manifest.json</span>        <em># MV3, v1.0.0</em>
+├── <span class="f">background.js</span>        <em># service worker</em>
+├── <span class="f">content.js</span>           <em># orquesta la detección</em>
+├── <span class="f">overlay.js</span>           <em># botón flotante</em>
+├── <b>scripts/</b>
+│   ├── utils.js         <em># formato, MIME, i18n</em>
+│   ├── storage.js       <em># ajustes + historial</em>
+│   ├── detector.js      <em># escaneo del DOM</em>
+│   ├── downloader.js    <em># chrome.downloads</em>
+│   └── hls-parser.js    <em># parser .m3u8</em>
+├── <b>offscreen/</b>
+│   ├── offscreen.html
+│   └── offscreen.js     <em># ffmpeg.wasm</em>
+├── <b>vendor/ffmpeg/</b>       <em># ffmpeg.wasm local</em>
+├── <b>popup/</b>               <em># html · css · js</em>
+├── <b>options/</b>             <em># html · css · js</em>
+├── <b>assets/icons/</b>        <em># 16 · 32 · 48 · 128</em>
+├── <b>tools/</b>               <em># instalar, probar, build</em>
+├── <b>store-assets/</b>        <em># capturas y ficha</em>
+├── <b>docs/</b>                <em># landing + privacidad</em>
+├── <b>dist/</b>                <em># .zip (ignorado en git)</em>
+├── <b>presentacion web/</b>    <em># esta página</em>
+├── gen_icons.py
+├── README.md · PUBLISHING.md
+├── CHANGELOG.md
+└── LICENSE</pre>
+
+      <div class="groups">
+        <div class="card group reveal"><h3><i style="background:#4285f4"></i>Interfaz</h3><ul>
+          <li><code>popup/popup.html</code> · <code>popup.css</code>: popup de 360 px con plantilla de tarjeta.</li>
+          <li><code>options/</code>: ajustes e historial.</li></ul></div>
+        <div class="card group reveal"><h3><i style="background:#8ab4f8"></i>Lógica del popup</h3><ul>
+          <li><code>popup/popup.js</code>: agrupa streams, renderiza tarjetas, progreso y reanudación.</li>
+          <li><code>scripts/downloader.js</code>: descarga directa.</li></ul></div>
+        <div class="card group reveal"><h3><i style="background:#fbbc04"></i>Segundo plano</h3><ul>
+          <li><code>background.js</code>: badge, red, menú contextual, cabeceras, historial y notificaciones.</li></ul></div>
+        <div class="card group reveal"><h3><i style="background:#81c995"></i>Integración con la página</h3><ul>
+          <li><code>content.js</code> + <code>scripts/detector.js</code>: escaneo y tamaños.</li>
+          <li><code>overlay.js</code>: botón sobre cada video (todos los frames).</li></ul></div>
+        <div class="card group reveal"><h3><i style="background:#34a853"></i>Multimedia</h3><ul>
+          <li><code>offscreen/offscreen.js</code>: segmentos → ffmpeg → Blob.</li>
+          <li><code>scripts/hls-parser.js</code> · <code>vendor/ffmpeg/</code>.</li></ul></div>
+        <div class="card group reveal"><h3><i style="background:#f28b82"></i>Build y publicación</h3><ul>
+          <li><code>tools/3-build.*</code>: valida y genera el <code>.zip</code>.</li>
+          <li><code>PUBLISHING.md</code>, <code>store-assets/LISTING.md</code>, <code>docs/privacy.html</code>.</li></ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ FLUJO ═════════════ -->
+<section id="flujo" style="padding-top:0">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Flujo entre componentes</p>
+      <h2>Quién habla con quién</h2>
+      <p class="lead">Cada flecha corresponde a un mensaje <code>chrome.runtime</code>/<code>chrome.tabs</code> o a una llamada de API presente en el código.</p>
+    </div>
+
+    <div class="diagram-wrap reveal">
+      <svg class="diagram" viewBox="0 0 1000 560" role="img" aria-labelledby="dgTitle dgDesc">
+        <title id="dgTitle">Diagrama de arquitectura de Super Video Downloader</title>
+        <desc id="dgDesc">La página web es leída por content.js y detector.js, que envían SVD_BADGE_COUNT al service worker. overlay.js envía SVD_OPEN_POPUP. El popup pide SVD_GET_VIDEOS al content script y SVD_GET_STREAMS y SVD_WASM_DOWNLOAD al service worker. El service worker observa la red con webRequest, delega en el documento offscreen con ffmpeg.wasm, y usa chrome.storage, chrome.downloads, notificaciones, menú contextual y badge.</desc>
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8ab4f8"/></marker>
+          <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#81c995"/></marker>
+          <marker id="ary" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fbbc04"/></marker>
+        </defs>
+
+        <!-- Columna A: página -->
+        <rect class="box" x="30" y="30" width="260" height="100" rx="14"/>
+        <text class="t" x="50" y="62">Página web</text>
+        <text class="s" x="50" y="86">&lt;video&gt; · &lt;source&gt; · &lt;a href=*.mp4&gt;</text>
+        <text class="s" x="50" y="106">og:image para la miniatura</text>
+
+        <rect class="box" x="30" y="200" width="260" height="96" rx="14"/>
+        <text class="t" x="50" y="232">content.js</text>
+        <text class="s" x="50" y="256">+ utils · storage · detector.js</text>
+        <text class="s" x="50" y="276">escaneo, HEAD para tamaños</text>
+
+        <rect class="box" x="30" y="340" width="260" height="86" rx="14"/>
+        <text class="t" x="50" y="372">overlay.js</text>
+        <text class="s" x="50" y="396">botón flotante · todos los frames</text>
+
+        <!-- Columna B -->
+        <rect class="box box--accent" x="370" y="30" width="260" height="100" rx="14"/>
+        <text class="t" x="390" y="62">Popup</text>
+        <text class="s" x="390" y="86">popup.js · downloader.js</text>
+        <text class="s" x="390" y="106">selector, progreso, reanudar</text>
+
+        <rect class="box box--accent" x="370" y="200" width="260" height="200" rx="14"/>
+        <text class="t" x="390" y="232">background.js</text>
+        <text class="s" x="390" y="254">Service worker</text>
+        <text class="m" x="390" y="282">· badge (conteo / %)</text>
+        <text class="m" x="390" y="302">· streamsByTab (webRequest)</text>
+        <text class="m" x="390" y="322">· menú contextual</text>
+        <text class="m" x="390" y="342">· regla DNR Referer/Origin</text>
+        <text class="m" x="390" y="362">· historial + notificación</text>
+        <text class="m" x="390" y="382">· ciclo de vida offscreen</text>
+
+        <!-- Columna C -->
+        <rect class="box box--api" x="710" y="30" width="260" height="80" rx="14"/>
+        <text class="t" x="730" y="62">Red de la pestaña</text>
+        <text class="s" x="730" y="86">peticiones .m3u8 / .mpd</text>
+
+        <rect class="box box--green" x="710" y="200" width="260" height="100" rx="14"/>
+        <text class="t" x="730" y="232">offscreen.html / .js</text>
+        <text class="s" x="730" y="256">ffmpeg.wasm · hls-parser.js</text>
+        <text class="s" x="730" y="276">concat -c copy → Blob .mp4</text>
+
+        <rect class="box box--api" x="710" y="340" width="260" height="86" rx="14"/>
+        <text class="t" x="730" y="372">UI del navegador</text>
+        <text class="s" x="730" y="396">notifications · contextMenus · action</text>
+
+        <!-- Fila inferior -->
+        <rect class="box box--api" x="370" y="460" width="200" height="70" rx="14"/>
+        <text class="t" x="390" y="490">chrome.storage</text>
+        <text class="s" x="390" y="512">svdSettings · svdHistory</text>
+
+        <rect class="box box--api" x="600" y="460" width="230" height="70" rx="14"/>
+        <text class="t" x="620" y="490">chrome.downloads</text>
+        <text class="s" x="620" y="512">download · onChanged · open</text>
+
+        <!-- Aristas -->
+        <path class="edge" d="M160 130 V196" marker-end="url(#ar)"/>
+        <rect class="lblbg" x="168" y="152" width="96" height="18" rx="4"/><text class="lbl" x="172" y="165">lee el DOM</text>
+
+        <path class="edge flowing" d="M290 262 H366" marker-end="url(#ar)"/>
+        <text class="lbl" x="296" y="254">BADGE_COUNT</text>
+
+        <path class="edge flowing" d="M290 384 H366" marker-end="url(#ar)"/>
+        <text class="lbl" x="294" y="376">OPEN_POPUP</text>
+
+        <path class="edge" d="M370 100 H330 V230 H294" marker-end="url(#ar)" marker-start="url(#ar)"/>
+        <text class="lbl" x="300" y="150">GET_</text><text class="lbl" x="300" y="164">VIDEOS</text>
+
+        <path class="edge" d="M500 134 V196" marker-end="url(#ar)" marker-start="url(#ar)"/>
+        <rect class="lblbg" x="508" y="146" width="116" height="36" rx="4"/>
+        <text class="lbl" x="512" y="160">GET_STREAMS</text><text class="lbl" x="512" y="176">WASM_DOWNLOAD</text>
+
+        <path class="edge edge--y" d="M710 70 H670 V230 H634" marker-end="url(#ary)"/>
+        <rect class="lblbg" x="640" y="142" width="64" height="18" rx="4"/><text class="lbl" x="644" y="155" style="fill:#fbbc04">webReq</text>
+
+        <path class="edge edge--g flowing" d="M630 262 H706" marker-end="url(#arg)" marker-start="url(#arg)"/>
+        <text class="lbl" x="638" y="254" style="fill:#81c995">PROGRESS</text>
+
+        <path class="edge edge--g" d="M840 200 V114" marker-end="url(#arg)"/>
+        <rect class="lblbg" x="848" y="146" width="116" height="18" rx="4"/><text class="lbl" x="852" y="159" style="fill:#81c995">fetch segmentos</text>
+
+        <path class="edge" d="M630 384 H706" marker-end="url(#ar)"/>
+
+        <path class="edge" d="M440 400 V456" marker-end="url(#ar)" marker-start="url(#ar)"/>
+        <path class="edge" d="M610 400 V456" marker-end="url(#ar)" marker-start="url(#ar)"/>
+      </svg>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="msg-table">
+        <caption class="sr-only" style="position:absolute;left:-9999px">Mensajes internos de la extensión</caption>
+        <thead><tr><th scope="col">Mensaje</th><th scope="col">Ruta</th><th scope="col">Para qué</th></tr></thead>
+        <tbody>
+          <tr><td><code>SVD_BADGE_COUNT</code></td><td class="route">content → background</td><td>Número de videos y lista compacta para el badge y el menú contextual.</td></tr>
+          <tr><td><code>SVD_GET_VIDEOS</code></td><td class="route">popup → content</td><td>Escaneo completo con tamaños (<code>HEAD</code>), dominio y miniatura <code>og:image</code>.</td></tr>
+          <tr><td><code>SVD_GET_STREAMS</code></td><td class="route">popup → background</td><td>Manifiestos HLS/DASH vistos en la red de esa pestaña.</td></tr>
+          <tr><td><code>SVD_WASM_DOWNLOAD</code></td><td class="route">popup → background → offscreen</td><td>Inicia la reconstrucción; background aplica la regla DNR y crea el documento offscreen.</td></tr>
+          <tr><td><code>SVD_WASM_PROGRESS</code></td><td class="route">offscreen → (difusión)</td><td>Porcentaje y bytes; el popup calcula la velocidad y background actualiza el badge.</td></tr>
+          <tr><td><code>SVD_WASM_DONE</code></td><td class="route">background → popup</td><td>Fin de la descarga, para un popup reabierto que ya no tiene la respuesta original.</td></tr>
+          <tr><td><code>SVD_WASM_CANCEL</code></td><td class="route">popup → offscreen</td><td>Aborta los <code>fetch</code> con <code>AbortController</code>.</td></tr>
+          <tr><td><code>SVD_GET_ACTIVE_DOWNLOADS</code></td><td class="route">popup → background</td><td>Recupera descargas HLS en curso al reabrir el popup.</td></tr>
+          <tr><td><code>SVD_OPEN_POPUP</code> / <code>SVD_CONSUME_AUTO_EXPAND</code></td><td class="route">overlay → background → popup</td><td>Abre el popup con <code>action.openPopup()</code> y despliega el selector de calidad.</td></tr>
+          <tr><td><code>SVD_REGISTER_DOWNLOAD</code></td><td class="route">popup → background</td><td>Asocia el <code>downloadId</code> al sitio para el historial.</td></tr>
+          <tr><td><code>SVD_SETTINGS_CHANGED</code></td><td class="route">options → content</td><td>Activa o desactiva el <code>MutationObserver</code> de actualización automática.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═════════════ PERMISOS ═════════════ -->
+<section id="permisos">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Permisos y seguridad</p>
+      <h2>Nueve permisos, todos usados en el código</h2>
+      <p class="lead">Se revisó cada permiso de <code>manifest.json</code> contra las llamadas reales. Ninguno está declarado sin uso.</p>
+    </div>
+    <div class="grid grid--3">
+      <div class="card perm reveal"><div class="perm__head"><code>storage</code><span class="used">En uso</span></div><p>Guardar ajustes e historial en <code>chrome.storage.local</code>.</p><span class="where">scripts/storage.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>downloads</code><span class="used">En uso</span></div><p>Iniciar descargas, mostrar en carpeta y detectar cuándo terminan.</p><span class="where">downloader.js · background.js · popup.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>downloads.open</code><span class="used">En uso</span></div><p>Botón "Reproducir" tras una descarga completada.</p><span class="where">popup.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>notifications</code><span class="used">En uso</span></div><p>Aviso al completar (opcional) y errores del menú contextual.</p><span class="where">background.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>webRequest</code><span class="used">En uso</span></div><p>Solo observa URLs <code>.m3u8</code>/<code>.mpd</code>; no bloquea ni modifica tráfico. Se guardan en memoria por pestaña.</p><span class="where">background.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>webNavigation</code><span class="used">En uso</span></div><p>Limpiar streams y menú cuando la pestaña navega a otra página.</p><span class="where">background.js</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>declarativeNetRequest</code><span class="used">En uso</span></div><p>Una regla dinámica (id 9001) que fija <code>Referer</code>/<code>Origin</code> solo para el dominio del stream, y se elimina en un <code>finally</code>.</p><span class="where">background.js · withHeaderOverride()</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>offscreen</code><span class="used">En uso</span></div><p>Documento con motivo <code>WORKERS</code> para ffmpeg.wasm; se cierra cuando no quedan descargas.</p><span class="where">background.js · offscreen/</span></div>
+      <div class="card perm reveal"><div class="perm__head"><code>contextMenus</code><span class="used">En uso</span></div><p>Submenú con los videos de la pestaña activa. No aparece en la tabla de permisos del README.</p><span class="where">background.js</span></div>
+    </div>
+
+    <div class="grid grid--2 security">
+      <div class="card reveal">
+        <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:10px"><span class="ico ico--g" style="margin:0"><svg><use href="#i-shield"/></svg></span>Medidas observadas en el código</h3>
+        <ul class="check-list">
+          <li><svg><use href="#i-check"/></svg><span><b>Sin código remoto:</b> ffmpeg.wasm va empaquetado en <code>vendor/ffmpeg/</code>; CSP <code>script-src 'self' 'wasm-unsafe-eval'</code>.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Sin servidores propios:</b> los únicos <code>fetch</code> van a las URLs de video detectadas (<code>HEAD</code> para tamaños y segmentos HLS). No hay analítica ni telemetría.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Aislamiento visual:</b> el botón flotante vive en un Shadow DOM <code>closed</code> con <code>all: initial</code>.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Memoria liberada:</b> instancia de ffmpeg terminada tras cada descarga y <code>URL.revokeObjectURL</code> al completar.</span></li>
+          <li><svg><use href="#i-check"/></svg><span><b>Política de privacidad</b> preparada en <code>docs/privacy.html</code>.</span></li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:10px"><span class="ico ico--y" style="margin:0"><svg><use href="#i-warn"/></svg></span>Alcance del acceso</h3>
+        <ul class="check-list">
+          <li class="warn"><svg><use href="#i-warn"/></svg><span><b><code>host_permissions: &lt;all_urls&gt;</code>:</b> los content scripts se inyectan en todas las páginas, porque no hay una lista fija de sitios compatibles.</span></li>
+          <li class="warn"><svg><use href="#i-warn"/></svg><span><b><code>webRequest</code> sobre <code>http(s)://*/*</code>:</b> el listener ve todas las peticiones, aunque solo retiene las que terminan en <code>.m3u8</code>/<code>.mpd</code>.</span></li>
+          <li class="warn"><svg><use href="#i-warn"/></svg><span><b>Peticiones <code>HEAD</code></b> a los servidores de video al abrir el popup, para obtener el tamaño.</span></li>
+          <li class="warn"><svg><use href="#i-warn"/></svg><span>No consta ninguna auditoría de seguridad externa.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ DESCARGAR ═════════════ -->
+<section id="descargar" style="padding-bottom:0">
+  <div class="container">
+    <div class="card download-cta reveal">
+      <img src="../assets/icons/icon128.png" alt="" width="88" height="88" class="download-cta__icon" />
+      <div class="download-cta__body">
+        <p class="eyebrow">Descargar extensión</p>
+        <h2 style="margin-bottom:10px">Super Video Downloader v1.0.0</h2>
+        <p class="muted" style="margin:0">Paquete listo para cargar en Chrome, Edge, Brave u Opera. Después de descargarlo, descomprímelo y sigue los pasos de instalación de abajo.</p>
+        <ul class="chips" style="margin-top:16px">
+          <li class="chip"><i></i>.zip · ≈9.8 MB</li>
+          <li class="chip"><i class="g"></i>25 archivos de runtime</li>
+          <li class="chip"><i></i>Chrome ≥ 109</li>
+        </ul>
+      </div>
+      <div class="download-cta__actions">
+        <a class="btn btn--primary" href="extension/super-video-downloader-v1.0.0.zip" download>
+          <svg><use href="#i-download"/></svg> Descargar extensión
+        </a>
+        <a class="btn btn--ghost" href="https://github.com/Apex-Technology-Corporation/super-video-downloader/archive/refs/heads/main.zip">
+          <svg><use href="#i-github"/></svg> Código fuente (.zip)
+        </a>
+      </div>
+    </div>
+    <div class="note note--info reveal"><svg><use href="#i-info"/></svg><span>"Descargar extensión" entrega <code>extension/super-video-downloader-v1.0.0.zip</code>, guardado junto a esta página. Al descomprimirlo se obtiene la carpeta <code>super-video-downloader/</code>, con <code>manifest.json</code> en su raíz: esa es la carpeta que se elige en <b>Cargar descomprimida</b>. El código fuente de la rama <code>main</code> también se puede descargar desde GitHub.</span></div>
+  </div>
+</section>
+
+<!-- ═════════════ INSTALACIÓN ═════════════ -->
+<section id="instalacion">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Instalación y uso</p>
+      <h2>Cárgala en tu navegador en un minuto</h2>
+      <p class="lead">El <code>manifest.json</code> está en la raíz del repositorio, así que esa es la carpeta que se carga. No hace falta compilar para probarla.</p>
+    </div>
+    <div class="install">
+      <div class="card reveal">
+        <h3 style="margin-bottom:18px">Modo desarrollador</h3>
+        <ol class="ol">
+          <li><span><a href="#descargar">Descarga la extensión</a> y descomprime el <code>.zip</code>, o clona el repositorio.</span></li>
+          <li><span>Abre <code>chrome://extensions</code> (o <code>edge://extensions</code>).</span></li>
+          <li><span>Activa <b>Modo desarrollador</b> arriba a la derecha.</span></li>
+          <li><span>Pulsa <b>Cargar descomprimida</b> y elige la carpeta que contiene <code>manifest.json</code>: <code>super-video-downloader/</code> (la que sale del <code>.zip</code>) o la raíz del repositorio. El navegador no carga el <code>.zip</code> directamente.</span></li>
+          <li><span>Comprueba que aparece "Super Video Downloader 1.0.0" sin errores y fíjala en la barra.</span></li>
+          <li><span>Abre una página con un video de enlace directo. El badge mostrará el número detectado.</span></li>
+        </ol>
+        <div class="note note--info"><svg><use href="#i-info"/></svg><span>Requiere Chrome 109 o superior (<code>minimum_chrome_version</code>). Según el README, la publicación en Chrome Web Store está pendiente.</span></div>
+      </div>
+      <div class="card reveal">
+        <h3 style="margin-bottom:6px">Con los scripts de <code>tools/</code></h3>
+        <p class="muted small">Perfil de prueba aislado con la extensión ya cargada mediante DevTools Protocol, y empaquetado validado.</p>
+        <div class="code"><span class="c"># Windows: perfil de prueba + video MP4 de ejemplo</span>
+powershell -File tools\2-test-extension.ps1<button class="copy" type="button" data-copy="powershell -File tools\2-test-extension.ps1">Copiar</button></div>
+        <div class="code"><span class="c"># Genera dist\super-video-downloader-v1.0.0.zip</span>
+powershell -File tools\3-build.ps1<button class="copy" type="button" data-copy="powershell -File tools\3-build.ps1">Copiar</button></div>
+        <div class="code"><span class="c"># Linux / macOS</span>
+./tools/2-test-extension.sh
+./tools/3-build.sh<button class="copy" type="button" data-copy="./tools/3-build.sh">Copiar</button></div>
+        <p class="muted small" style="margin:0">El build valida el JSON del manifiesto, que la descripción tenga 132 caracteres o menos, la sintaxis de los <code>.js</code> con <code>node --check</code>, que existan iconos y archivos de ffmpeg, y que no haya nombres de plataformas de terceros en los textos de la ficha.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═════════════ LIMITACIONES ═════════════ -->
+<section id="limitaciones">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Limitaciones conocidas</p>
+      <h2>Lo que no hace, o hace a medias</h2>
+      <p class="lead">Extraído de los comentarios del código, el README y los mensajes de error.</p>
+    </div>
+    <ul class="limits">
+      <li class="reveal"><svg><use href="#i-x"/></svg><span><b>DRM y <code>blob:</code>/MediaSource cifrado:</b> se detectan, no se descargan. Es una decisión deliberada.</span></li>
+      <li class="reveal"><svg><use href="#i-x"/></svg><span><b>HLS cifrado</b> (<code>#EXT-X-KEY</code>) y <b><code>EXT-X-BYTERANGE</code></b>: error explícito.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>DASH (<code>.mpd</code>):</b> solo detección; la descarga aún no está implementada.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Streams muy largos</b> pueden agotar la memoria disponible para WebAssembly, porque todo se procesa en el navegador.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Playlist maestra recibida directamente:</b> el documento offscreen elige la calidad más baja por seguridad de memoria.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Tamaño:</b> solo si el servidor responde <code>Content-Length</code> al <code>HEAD</code> y sin bloqueo CORS; si no, "Desconocido".</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Calidades alternativas:</b> solo si el sitio las expone en el DOM o en la red; no se inventan.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Detección DOM solo en el frame principal:</b> <code>content.js</code> no usa <code>all_frames</code> (el overlay sí, y la detección por red cubre todos los frames).</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Carpeta de destino:</b> solo subcarpetas dentro de Descargas, por restricción del navegador.</span></li>
+      <li class="p reveal"><svg><use href="#i-warn"/></svg><span><b>Peso del paquete:</b> el <code>.zip</code> ocupa ≈9.8 MB, casi todo por <code>ffmpeg-core.wasm</code>.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═════════════ INFO ═════════════ -->
+<section id="info" style="padding-top:0">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Información del proyecto</p>
+      <h2>Ficha técnica</h2>
+    </div>
+    <dl class="facts reveal">
+      <div class="fact"><dt>Nombre</dt><dd>Super Video Downloader</dd></div>
+      <div class="fact"><dt>Tipo</dt><dd>Extensión de navegador<small>Manifest V3</small></dd></div>
+      <div class="fact"><dt>Versión</dt><dd>1.0.0<small>manifest.json · CHANGELOG 2026-07-16</small></dd></div>
+      <div class="fact"><dt>Licencia</dt><dd>MIT<small>© 2026 alvarosiles</small></dd></div>
+      <div class="fact"><dt>Plataforma</dt><dd>Chromium ≥ 109<small>Chrome, Edge, Brave, Opera</small></dd></div>
+      <div class="fact"><dt>Tecnologías</dt><dd>JS · HTML · CSS<small>+ ffmpeg.wasm 0.12</small></dd></div>
+      <div class="fact"><dt>Idiomas</dt><dd>Español · English</dd></div>
+      <div class="fact"><dt>Estado</dt><dd>Lista para publicar<small>Chrome Web Store: pendiente según README</small></dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ═════════════ RECURSOS ═════════════ -->
+<section id="recursos" style="padding-top:0">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">Documentación y recursos</p>
+      <h2>Para seguir leyendo</h2>
+      <p class="lead">Enlaces relativos a los archivos del repositorio. Funcionan al abrir esta página desde su carpeta.</p>
+    </div>
+    <div class="grid grid--3">
+      <a class="card card--lift res reveal" href="../README.md"><div class="ico"><svg><use href="#i-doc"/></svg></div><div><h3>README</h3><p>Descripción, características, permisos y preguntas frecuentes.</p><span class="path">README.md</span></div></a>
+      <a class="card card--lift res reveal" href="../PUBLISHING.md"><div class="ico"><svg><use href="#i-build"/></svg></div><div><h3>Guía de publicación</h3><p>Paso a paso para el Chrome Web Store Developer Dashboard.</p><span class="path">PUBLISHING.md</span></div></a>
+      <a class="card card--lift res reveal" href="../docs/privacy.html"><div class="ico ico--g"><svg><use href="#i-shield"/></svg></div><div><h3>Política de privacidad</h3><p>Qué datos se tratan (ninguno sale del navegador).</p><span class="path">docs/privacy.html</span></div></a>
+      <a class="card card--lift res reveal" href="../CHANGELOG.md"><div class="ico"><svg><use href="#i-history"/></svg></div><div><h3>Changelog</h3><p>Cambios de la versión 1.0.0.</p><span class="path">CHANGELOG.md</span></div></a>
+      <a class="card card--lift res reveal" href="../store-assets/LISTING.md"><div class="ico ico--y"><svg><use href="#i-layers"/></svg></div><div><h3>Ficha de tienda</h3><p>Descripciones y justificación de permisos listas para pegar.</p><span class="path">store-assets/LISTING.md</span></div></a>
+      <a class="card card--lift res reveal" href="https://github.com/Apex-Technology-Corporation/super-video-downloader" target="_blank" rel="noopener"><div class="ico"><svg><use href="#i-github"/></svg></div><div><h3>Repositorio</h3><p>Código fuente en GitHub.</p><span class="path">Apex-Technology-Corporation/super-video-downloader</span></div></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ═════════════ FOOTER ═════════════ -->
+<footer>
+  <div class="container">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#inicio"><img src="../assets/icons/icon128.png" alt="" width="32" height="32" /><span>Super Video Downloader</span></a>
+        <p style="margin-top:14px">Extensión Manifest V3 que detecta videos de enlace directo y streams HLS sin cifrar, y los descarga localmente con ffmpeg.wasm. No elude DRM.</p>
+      </div>
+      <div>
+        <h4>Secciones</h4>
+        <ul>
+          <li><a href="#demo">Demo</a></li>
+          <li><a href="#funciones">Funcionalidades</a></li>
+          <li><a href="#arquitectura">Arquitectura</a></li>
+          <li><a href="#permisos">Permisos</a></li>
+          <li><a href="#instalacion">Instalación</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="../README.md">README</a></li>
+          <li><a href="../PUBLISHING.md">Publicación</a></li>
+          <li><a href="../docs/privacy.html">Privacidad</a></li>
+          <li><a href="../LICENSE">Licencia MIT</a></li>
+          <li><a href="https://github.com/Apex-Technology-Corporation/super-video-downloader" target="_blank" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot__bottom">
+      <span>© 2026 alvarosiles · Licencia MIT</span>
+      <span>Super Video Downloader v1.0.0</span>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" type="button" aria-label="Volver al inicio"><svg><use href="#i-up"/></svg></button>
+
+<script>
+(() => {
+  'use strict';
+  document.body.classList.remove('no-js');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Menú móvil ──────────────────────────────────────────
+  const toggle = document.getElementById('navToggle');
+  const menu = document.getElementById('navMenu');
+  function setMenu(open) {
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    menu.classList.toggle('is-open', open);
+  }
+  toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+  menu.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { setMenu(false); toggle.focus(); }
+  });
+  window.addEventListener('resize', () => { if (window.innerWidth > 960) setMenu(false); });
+
+  // ── Nav al hacer scroll + botón volver arriba ───────────
+  const nav = document.getElementById('nav');
+  const toTop = document.getElementById('toTop');
+  function onScroll() {
+    const y = window.scrollY;
+    nav.classList.toggle('is-scrolled', y > 8);
+    toTop.classList.toggle('is-visible', y > 700);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  toTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    document.querySelector('.brand').focus({ preventScroll: true });
+  });
+
+  // ── Enlace activo en la navegación ──────────────────────
+  const navLinks = Array.from(document.querySelectorAll('.nav__links a'));
+  const sectionsById = navLinks.map((a) => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  if ('IntersectionObserver' in window) {
+    const spy = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === '#' + entry.target.id));
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    sectionsById.forEach((s) => spy.observe(s));
+
+    // ── Animaciones de entrada ────────────────────────────
+    const revealer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('is-in'); revealer.unobserve(entry.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach((el) => revealer.observe(el));
+    // Respaldo: si el observer no llega a dispararse (iframes, capturas), el contenido nunca queda oculto.
+    setTimeout(() => document.querySelectorAll('.reveal:not(.is-in)').forEach((el) => el.classList.add('is-in')), 2500);
+  } else {
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-in'));
+  }
+
+  // ── Pestañas de capturas (patrón ARIA tabs) ─────────────
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  function selectTab(tab, focus) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if (focus) tab.focus();
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', (e) => {
+      let next = null;
+      if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+      if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+      if (e.key === 'Home') next = tabs[0];
+      if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (next) { e.preventDefault(); selectTab(next, true); }
+    });
+  });
+
+  // ── Filtro de funcionalidades ───────────────────────────
+  const filterBtns = Array.from(document.querySelectorAll('[data-filter]'));
+  const features = Array.from(document.querySelectorAll('#featureGrid .feature'));
+  filterBtns.forEach((btn) => btn.addEventListener('click', () => {
+    const cat = btn.dataset.filter;
+    filterBtns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    features.forEach((f) => {
+      f.hidden = !(cat === 'all' || f.dataset.cat === cat);
+      if (!f.hidden) f.classList.add('is-in');
+    });
+  }));
+
+  // ── Simulador del ciclo de vida de una tarjeta ──────────
+  const sim = {
+    item: document.getElementById('simItem'),
+    lock: document.getElementById('simLock'),
+    ready: document.getElementById('simReady'),
+    prog: document.getElementById('simProg'),
+    done: document.getElementById('simDone'),
+    fill: document.getElementById('simFill'),
+    pct: document.getElementById('simPct'),
+    q: document.getElementById('simQ'),
+    size: document.getElementById('simSize'),
+    dl: document.getElementById('simDl'),
+    note: document.getElementById('simNote'),
+    name: document.getElementById('simName'),
+  };
+  const notes = {
+    ready: 'Stream HLS detectado por red. El selector muestra el formato de salida (MP4) y la calidad deducida de la URL; el tamaño de un stream no se conoce de antemano.',
+    hls: 'Hasta el 70 %: descarga de segmentos .ts al sistema de archivos virtual de ffmpeg. Del 70 al 100 %: remux con concat -c copy, leyendo time= del log de ffmpeg.',
+    done: 'El Blob .mp4 se entrega a chrome.downloads. La tarjeta ofrece Reproducir (downloads.open) y Mostrar en carpeta; la descarga entra en el historial.',
+    locked: 'Fuente blob:/MediaSource: se lista para que sepas que existe, pero el botón queda deshabilitado. La extensión no intenta descifrar ni reconstruir este contenido.',
+  };
+  let timer = null;
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function setSim(state) {
+    stopTimer();
+    document.querySelectorAll('[data-sim]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sim === state)));
+    sim.note.textContent = notes[state];
+    sim.lock.hidden = state !== 'locked';
+    sim.ready.hidden = !(state === 'ready' || state === 'locked');
+    sim.prog.hidden = state !== 'hls';
+    sim.done.hidden = state !== 'done';
+    sim.item.style.opacity = state === 'locked' ? '0.75' : '1';
+    sim.name.textContent = state === 'locked' ? 'Video protegido' : 'Webinar.mp4';
+    sim.q.textContent = state === 'locked' ? '#1' : 'MP4 720P ▾';
+    sim.size.textContent = state === 'locked' ? '' : 'Desconocido';
+    sim.dl.style.background = state === 'locked' ? '#3c4043' : '#4285f4';
+    sim.dl.style.color = state === 'locked' ? '#9aa0a6' : '#fff';
+    if (state === 'hls') {
+      let p = 0;
+      const render = () => {
+        sim.fill.style.width = p + '%';
+        sim.fill.style.background = p > 70 ? '#34a853' : '#4285f4';
+        sim.pct.textContent = p <= 70 ? p + '% · 1.8 MB/s' : p + '%';
+      };
+      if (reduceMotion) { p = 63; render(); return; }
+      render();
+      timer = setInterval(() => {
+        p += p < 70 ? 2 : 3;
+        if (p >= 100) { p = 100; render(); stopTimer(); setTimeout(() => setSim('done'), 600); return; }
+        render();
+      }, 110);
+    }
+  }
+  document.querySelectorAll('[data-sim]').forEach((b) => b.addEventListener('click', () => setSim(b.dataset.sim)));
+  setSim('ready');
+
+  // ── Copiar comandos ─────────────────────────────────────
+  document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(btn.dataset.copy);
+      btn.textContent = 'Copiado';
+    } catch (_err) {
+      btn.textContent = 'No disponible';
+    }
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 1600);
+  }));
+})();
+</script>
+</body>
+</html>

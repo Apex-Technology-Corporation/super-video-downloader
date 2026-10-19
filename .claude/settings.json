@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-remote *)",
+      "Bash(unzip -l dist/super-video-downloader-v1.0.0.zip)",
+      "Bash(git check-ignore *)",
+      "PowerShell(Get-ChildItem -Force .claude, \"presentacion web\" -Recurse | Select-Object FullName,Length; git log --format=\"%h %an %ad %s\" --date=short | Select-Object -First 15; \\(git log --oneline | Measure-Object -Line\\).Lines; git log --format=\"%an\" | Sort-Object | Get-Unique)",
+      "PowerShell(python \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\gen_video.py\")",
+      "PowerShell(python -m http.server 8765 --bind 127.0.0.1 --directory \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\demo-site\")",
+      "PowerShell(python \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\launch.py\" first)",
+      "PowerShell(python \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\launch.py\" run paodpidlgkmkiabkdbmffjgpbbkklanh)",
+      "PowerShell(& \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\capture.ps1\" -Out \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\test0.png\")",
+      "PowerShell(python $d list)",
+      "PowerShell(python $d eval 8765/index \"\\({title: document.title, dur: document.getElementById\\('v'\\).duration, src: document.getElementById\\('v'\\).currentSrc, w: innerWidth, h: innerHeight}\\)\")",
+      "Bash(python C:/Users/ALVARO/AppData/Local/Temp/claude/c--Users-ALVARO-Documents-GitHub-super-video-downloader/a1cd8d40-0d2e-47a4-904e-9f3668afd798/scratchpad/drive.py eval 8765/index '\\({title: document.title, dur: document.getElementById\\('\\\\''v'\\\\''\\).duration, src: document.getElementById\\('\\\\''v'\\\\''\\).currentSrc, w: innerWidth, h: innerHeight}\\)')",
+      "Bash(python C:/Users/ALVARO/AppData/Local/Temp/claude/c--Users-ALVARO-Documents-GitHub-super-video-downloader/a1cd8d40-0d2e-47a4-904e-9f3668afd798/scratchpad/drive.py eval 8765/index 'document.title + '\\\\'' | '\\\\'' + document.documentElement.outerHTML.slice\\(0,600\\)')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8765/index.html)",
+      "PowerShell(python -m http.server 18765 --bind 127.0.0.1 --directory \"C:\\\\Users\\\\ALVARO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ALVARO-Documents-GitHub-super-video-downloader\\\\a1cd8d40-0d2e-47a4-904e-9f3668afd798\\\\scratchpad\\\\demo-site\")",
+      "Bash(python __TRACKED_VAR__/drive.py list)",
+      "Bash(python __TRACKED_VAR__/drive.py eval 18765/index '\\({title: document.title, dur: document.getElementById\\('\\\\''v'\\\\''\\).duration, src: document.getElementById\\('\\\\''v'\\\\''\\).currentSrc, w: innerWidth, h: innerHeight}\\)')",
+      "Bash(python C:/Users/ALVARO/AppData/Local/Temp/claude/c--Users-ALVARO-Documents-GitHub-super-video-downloader/a1cd8d40-0d2e-47a4-904e-9f3668afd798/scratchpad/drive.py bgtab chrome-extension://paodpidlgkmkiabkdbmffjgpbbkklanh/options/options.html)",
+      "Bash(python C:/Users/ALVARO/AppData/Local/Temp/claude/c--Users-ALVARO-Documents-GitHub-super-video-downloader/a1cd8d40-0d2e-47a4-904e-9f3668afd798/scratchpad/drive.py eval options.html 'chrome.action.openPopup\\(\\).then\\(\\(\\)=>'\\\\''ok'\\\\'',e=>'\\\\''err '\\\\''+e.message\\)')",
+      "Bash(python C:/Users/ALVARO/AppData/Local/Temp/claude/c--Users-ALVARO-Documents-GitHub-super-video-downloader/a1cd8d40-0d2e-47a4-904e-9f3668afd798/scratchpad/drive.py list)"
+    ]
+  }
+}
