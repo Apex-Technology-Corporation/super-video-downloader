@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Super Video Downloader — mockup progreso</title>
+  <link rel="stylesheet" href="../popup/popup.css" />
+  <style>
+    * { animation: none !important; transition: none !important; }
+    html, body {
+      width: 1280px;
+      height: 800px;
+      margin: 0;
+      background: #0f1012;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body .app {
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border-radius: 14px;
+      overflow: hidden;
+      opacity: 1 !important;
+    }
+    .mock-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .video-item { opacity: 1 !important; }
+  </style>
+</head>
+<body>
+  <div class="app" data-theme="dark">
+    <header class="app__header">
+      <div class="app__brand">
+        <span class="icon icon--brand" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </span>
+        <h1 class="app__title">Super Video Downloader</h1>
+      </div>
+      <div class="app__actions">
+        <button class="icon-btn" type="button" title="Refresh">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 2.97-2.16 5.44-5 5.92v2.02c3.95-.49 7-3.85 7-7.94 0-4.42-3.58-8-8-8zm-6 8c0-1.65.67-3.15 1.76-4.24L6.34 7.34C4.9 8.79 4 10.79 4 13c0 4.08 3.05 7.44 7 7.93v-2.02c-2.84-.48-5-2.94-5-5.91z"/></svg>
+        </button>
+        <button class="icon-btn" type="button" title="Settings">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.5.5 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="card site-card">
+      <div class="site-card__favicon" style="background:#ea4335;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:12px;">LV</div>
+      <div class="site-card__info">
+        <p class="site-card__label">SITIO ACTUAL</p>
+        <p class="site-card__domain">live-videos.example</p>
+      </div>
+      <span class="badge">1</span>
+    </section>
+
+    <section class="video-list">
+      <article class="video-item">
+        <div class="video-item__thumb">
+          <svg class="mock-thumb" viewBox="0 0 72 48" preserveAspectRatio="xMidYMid slice"><rect width="72" height="48" fill="#5a3a8c"/><circle cx="36" cy="24" r="10" fill="#ffffff" opacity="0.85"/><path d="M33 19l9 5-9 5z" fill="#5a3a8c"/></svg>
+          <span class="video-item__duration">12:05</span>
+        </div>
+        <div class="video-item__body">
+          <div class="video-item__title-row">
+            <p class="video-item__name">Webinar Recording - Streaming HLS.mp4</p>
+          </div>
+          <div class="video-item__progress">
+            <div class="video-item__progress-track">
+              <div class="video-item__progress-fill" style="width:63%;"></div>
+            </div>
+            <span class="video-item__progress-label">63% · 1.8 MB/s</span>
+            <button class="btn btn--cancel" type="button">Detener</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="app__footer">
+      <span class="app__status">Reconstruyendo stream con ffmpeg.wasm…</span>
+    </footer>
+
+    <nav class="app__toolbar">
+      <button class="toolbar-btn" type="button">¿No hay video?</button>
+      <span class="toolbar-spacer"></span>
+      <button class="icon-btn" type="button" title="History">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+      </button>
+      <button class="icon-btn" type="button" title="Open downloads folder">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+      </button>
+      <button class="icon-btn" type="button" title="Clear history">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </button>
+      <button class="icon-btn" type="button" title="Help">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
+      </button>
+    </nav>
+  </div>
+</body>
+</html>

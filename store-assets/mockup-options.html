@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Super Video Downloader — Configuración</title>
+  <link rel="stylesheet" href="../options/options.css" />
+  <style>
+    * { animation: none !important; transition: none !important; }
+    .card { opacity: 1 !important; transform: none !important; }
+    body { width: 1280px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page__header">
+      <span class="icon icon--brand" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </span>
+      <h1>Configuración</h1>
+    </header>
+
+    <section class="card">
+      <h2>Descargas</h2>
+
+      <div class="field">
+        <label>Subcarpeta de descarga</label>
+        <input type="text" value="SuperVideoDownloader" readonly />
+        <p class="field__hint">
+          Chrome no permite elegir una carpeta absoluta del sistema desde una extensión;
+          los archivos se guardan dentro de tu carpeta de Descargas, en esta subcarpeta.
+        </p>
+      </div>
+
+      <div class="field field--row">
+        <div>
+          <label>Nombre automático</label>
+          <p class="field__hint">Si lo desactivas, el navegador te preguntará dónde guardar cada archivo.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <label>Mostrar notificaciones</label>
+        <label class="switch">
+          <input type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <div>
+          <label>Actualización automática de la lista</label>
+          <p class="field__hint">Vuelve a detectar videos cuando la página cambia (sitios de una sola página).</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <label>Tema</label>
+        <select><option>Oscuro</option></select>
+      </div>
+
+      <div class="field field--row">
+        <label>Idioma</label>
+        <select><option>Español</option></select>
+      </div>
+
+      <button class="btn btn--primary" type="button">Guardar</button>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <h2>Historial</h2>
+        <button class="btn btn--danger" type="button">Borrar historial</button>
+      </div>
+      <div class="history-list">
+        <article class="history-item">
+          <div class="history-item__info">
+            <p class="history-item__name">Product Demo - Q3 Release.mp4</p>
+            <p class="history-item__meta">example-videos.com · 86.4 MB · hace 2 minutos</p>
+          </div>
+          <button class="icon-btn history-item__remove" type="button" title="Eliminar">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </article>
+        <article class="history-item">
+          <div class="history-item__info">
+            <p class="history-item__name">Webinar Recording - Streaming HLS.mp4</p>
+            <p class="history-item__meta">live-videos.example · 214 MB · hace 1 hora</p>
+          </div>
+          <button class="icon-btn history-item__remove" type="button" title="Eliminar">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </article>
+        <article class="history-item">
+          <div class="history-item__info">
+            <p class="history-item__name">Company All-Hands Recording.mp4</p>
+            <p class="history-item__meta">example-videos.com · 41.2 MB · ayer</p>
+          </div>
+          <button class="icon-btn history-item__remove" type="button" title="Eliminar">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </article>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Política de Privacidad — Super Video Downloader</title>
+<style>
+  :root {
+    --bg: #0f1012; --card: #1a1c1e; --text: #f1f3f4; --muted: #9aa0a6;
+    --accent: #4285f4; --border: #2d2f33;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f5f7; --card: #ffffff; --text: #202124; --muted: #5f6368; --border: #dadce0; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', Roboto, -apple-system, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .icon svg { width: 20px; height: 20px; fill: #fff; }
+  h1 { font-size: 24px; margin: 0; }
+  .updated { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+  h2 { font-size: 18px; margin-top: 40px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  p, li { color: var(--text); }
+  ul { padding-left: 22px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); }
+  code { background: var(--card); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  a { color: var(--accent); }
+  .highlight { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 20px 0; }
+  footer { margin-top: 60px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span>
+    <h1>Política de Privacidad</h1>
+  </header>
+  <p class="updated">Super Video Downloader · Última actualización: julio de 2026</p>
+
+  <div class="highlight">
+    <strong>Resumen:</strong> Super Video Downloader no recolecta, almacena
+    ni transmite ningún dato personal a servidores externos. Todo el
+    procesamiento — detección de videos, reconstrucción de streams,
+    descarga, historial — ocurre localmente en tu navegador.
+  </div>
+
+  <h2>Qué hace la extensión</h2>
+  <p>
+    Super Video Downloader detecta videos disponibles en la página web que
+    estás visitando (elementos <code>&lt;video&gt;</code>/<code>&lt;source&gt;</code>
+    con URL directa, y streams HLS <code>.m3u8</code> sin cifrar) y te
+    permite descargarlos con un clic. Los streams HLS se reconstruyen en
+    un único archivo <code>.mp4</code> usando <code>ffmpeg.wasm</code>
+    dentro del propio navegador, sin instalar nada aparte del navegador
+    mismo. No elude DRM, cifrado ni protecciones de streaming: los videos
+    con <code>blob:</code>/MediaSource cifrado de plataformas con
+    protección DRM se detectan pero se marcan como no descargables a
+    propósito.
+  </p>
+
+  <h2>Qué datos recolecta</h2>
+  <p><strong>Ninguno se envía fuera de tu dispositivo.</strong> La extensión guarda localmente, usando <code>chrome.storage.local</code> (nunca sincronizado a un servidor):</p>
+  <table>
+    <tr><th>Dato guardado localmente</th><th>Para qué</th></tr>
+    <tr><td>Configuración (tema, idioma, subcarpeta de descarga, preferencias de notificación)</td><td>Recordar tus preferencias entre sesiones.</td></tr>
+    <tr><td>Historial de descargas (nombre de archivo, tamaño, sitio, fecha)</td><td>Mostrarte tu propio historial dentro de la extensión, con opción de borrarlo en cualquier momento.</td></tr>
+  </table>
+  <p>
+    Ningún dato de navegación, contenido de páginas, ni metadatos de
+    video sale de tu equipo. La extensión no tiene servidor propio, no
+    usa analítica ni SDKs de terceros, y no comparte información con
+    nadie, incluida la persona desarrolladora.
+  </p>
+
+  <h2>Qué NO hace</h2>
+  <ul>
+    <li>No vende ni comparte datos con terceros.</li>
+    <li>No usa analítica ni telemetría.</li>
+    <li>No carga código remoto (todo el JavaScript viaja empaquetado dentro de la extensión).</li>
+    <li>No elude DRM ni protecciones de streaming.</li>
+    <li>No rastrea tu actividad de navegación más allá de detectar videos en la pestaña activa.</li>
+  </ul>
+
+  <h2>Permisos que solicita y por qué</h2>
+  <table>
+    <tr><th>Permiso</th><th>Para qué se usa</th></tr>
+    <tr><td><code>storage</code></td><td>Guardar configuración e historial localmente (<code>chrome.storage.local</code>).</td></tr>
+    <tr><td><code>downloads</code></td><td>Iniciar descargas y saber cuándo terminan.</td></tr>
+    <tr><td><code>downloads.open</code></td><td>Botón "Reproducir" tras completar una descarga.</td></tr>
+    <tr><td><code>notifications</code></td><td>Notificación opcional al completar una descarga.</td></tr>
+    <tr><td><code>webRequest</code></td><td>Observar (nunca modificar ni bloquear) peticiones de red para detectar manifiestos HLS.</td></tr>
+    <tr><td><code>webNavigation</code></td><td>Limpiar streams detectados al cambiar de página.</td></tr>
+    <tr><td><code>declarativeNetRequest</code></td><td>Fijar temporalmente la cabecera Referer/Origin al pedir un manifiesto HLS.</td></tr>
+    <tr><td><code>offscreen</code></td><td>Ejecutar ffmpeg.wasm para reconstruir streams HLS.</td></tr>
+    <tr><td><code>host_permissions: &lt;all_urls&gt;</code></td><td>Detectar videos en cualquier sitio que visites — no hay una lista fija de páginas soportadas.</td></tr>
+  </table>
+
+  <h2>Cómo borrar tus datos</h2>
+  <p>
+    Podés borrar el historial de descargas en cualquier momento desde el
+    popup de la extensión o la página de Opciones. Para borrar toda la
+    configuración guardada, alcanza con <strong>desinstalar la
+    extensión</strong> — Chrome elimina automáticamente todo su
+    almacenamiento local al hacerlo.
+  </p>
+
+  <h2>Cambios a esta política</h2>
+  <p>
+    Si esta política cambia, se actualizará esta misma página con una
+    nueva fecha de "última actualización".
+  </p>
+
+  <h2>Contacto</h2>
+  <p>
+    Para preguntas sobre privacidad: <a href="mailto:alvarosiles.developer@gmail.com">alvarosiles.developer@gmail.com</a><br />
+    Repositorio: <a href="https://github.com/alvarosiles/super-video-downloader">github.com/alvarosiles/super-video-downloader</a>
+  </p>
+
+  <footer>Super Video Downloader — código abierto bajo licencia MIT.</footer>
+</div>
+</body>
+</html>

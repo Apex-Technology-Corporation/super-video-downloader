@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Super Video Downloader",
+  "short_name": "Super Video Downloader",
+  "version": "1.0.0",
+  "description": "Detecta los videos descargables (incluidos los streams HLS) de la página actual y te permite guardarlos con un clic.",
+  "author": "alvarosiles",
+  "homepage_url": "https://github.com/alvarosiles/super-video-downloader",
+
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+
+  "action": {
+    "default_title": "Super Video Downloader",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+
+  "options_page": "options/options.html",
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/utils.js", "scripts/storage.js", "scripts/detector.js", "content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": ["overlay.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "permissions": ["storage", "downloads", "downloads.open", "notifications", "webRequest", "webNavigation", "offscreen", "declarativeNetRequest", "contextMenus"],
+  "host_permissions": ["<all_urls>"],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+
+  "minimum_chrome_version": "109"
+}

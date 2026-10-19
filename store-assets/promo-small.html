@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; animation: none !important; transition: none !important; }
+  html, body { width: 440px; height: 280px; }
+  body {
+    background: linear-gradient(135deg, #1a1c1e 0%, #202124 60%, #1a2a4a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Roboto, -apple-system, Arial, sans-serif;
+    gap: 14px;
+  }
+  .icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: #4285f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(66,133,244,0.4);
+  }
+  .icon svg { width: 36px; height: 36px; fill: #fff; }
+  .title { color: #fff; font-size: 22px; font-weight: 700; text-align: center; }
+  .subtitle { color: #9aa0a6; font-size: 13px; text-align: center; max-width: 360px; }
+</style>
+</head>
+<body>
+  <div class="icon">
+    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+  </div>
+  <div class="title">Super Video Downloader</div>
+  <div class="subtitle">Detecta y descarga videos de la página actual, con soporte para streams HLS</div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; animation: none !important; transition: none !important; }
+  html, body { width: 1400px; height: 560px; }
+  body {
+    background: linear-gradient(135deg, #1a1c1e 0%, #202124 55%, #1a2a4a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    font-family: 'Segoe UI', Roboto, -apple-system, Arial, sans-serif;
+    padding: 0 80px;
+  }
+  .left { display: flex; flex-direction: column; gap: 20px; max-width: 560px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .icon {
+    width: 56px; height: 56px; border-radius: 14px; background: #4285f4;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(66,133,244,0.4);
+  }
+  .icon svg { width: 32px; height: 32px; fill: #fff; }
+  .brand-name { color: #fff; font-size: 26px; font-weight: 700; }
+  .headline { color: #fff; font-size: 38px; font-weight: 700; line-height: 1.25; }
+  .headline span { color: #4285f4; }
+  .desc { color: #9aa0a6; font-size: 16px; line-height: 1.5; }
+
+  .mock {
+    width: 420px;
+    background: #2d2f33;
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .mock-header { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600; font-size: 15px; }
+  .mock-header svg { width: 20px; height: 20px; fill: #4285f4; }
+  .mock-item { display: flex; align-items: center; gap: 10px; background: #202124; border-radius: 10px; padding: 8px; }
+  .mock-thumb { width: 64px; height: 42px; border-radius: 6px; flex-shrink: 0; }
+  .mock-info { flex: 1; min-width: 0; }
+  .mock-name { color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mock-meta { color: #9aa0a6; font-size: 10px; margin-top: 2px; }
+  .mock-btn { background: #4285f4; color: #fff; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 999px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></div>
+      <div class="brand-name">Super Video Downloader</div>
+    </div>
+    <div class="headline">Descarga videos, incluidos <span>streams HLS</span>, sin instalar nada más</div>
+    <div class="desc">Detecta automáticamente los videos disponibles en la página que estás
+    viendo y reconstruye streams HLS directamente en el navegador — con barra
+    de progreso, selector de calidad y sin depender de servidores externos.</div>
+  </div>
+  <div class="mock">
+    <div class="mock-header">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      Super Video Downloader
+    </div>
+    <div class="mock-item">
+      <div class="mock-thumb" style="background:#3a5a8c;"></div>
+      <div class="mock-info">
+        <div class="mock-name">Product Demo - Q3 Release.mp4</div>
+        <div class="mock-meta">1920×1080 · 86.4 MB</div>
+      </div>
+      <div class="mock-btn">Download</div>
+    </div>
+    <div class="mock-item">
+      <div class="mock-thumb" style="background:#5a3a8c;"></div>
+      <div class="mock-info">
+        <div class="mock-name">Webinar Recording - HLS.mp4</div>
+        <div class="mock-meta">MP4 720P · 63% · 1.8 MB/s</div>
+      </div>
+      <div class="mock-btn" style="background:#f28b82;">Detener</div>
+    </div>
+    <div class="mock-item">
+      <div class="mock-thumb" style="background:#4a8c5a;"></div>
+      <div class="mock-info">
+        <div class="mock-name">Company All-Hands Recording.mp4</div>
+        <div class="mock-meta" style="color:#34a853;">Completado</div>
+      </div>
+      <div class="mock-btn" style="background:#34a853;">Reproducir</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Super Video Downloader — Configuración</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page__header">
+      <span class="icon icon--brand" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+      </span>
+      <h1 data-i18n="optionsTitle">Configuración</h1>
+    </header>
+
+    <section class="card">
+      <h2 data-i18n="sectionDownloads">Descargas</h2>
+
+      <div class="field">
+        <label for="downloadFolder" data-i18n="downloadFolder">Subcarpeta de descarga</label>
+        <input type="text" id="downloadFolder" placeholder="SuperVideoDownloader" />
+        <p class="field__hint" data-i18n="downloadFolderHint">
+          Chrome no permite elegir una carpeta absoluta del sistema desde una extensión;
+          los archivos se guardan dentro de tu carpeta de Descargas, en esta subcarpeta.
+        </p>
+      </div>
+
+      <div class="field field--row">
+        <div>
+          <label for="autoName" data-i18n="autoName">Nombre automático</label>
+          <p class="field__hint" data-i18n="autoNameHint">
+            Si lo desactivas, el navegador te preguntará dónde guardar cada archivo.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoName" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <label for="showNotifications" data-i18n="showNotifications">Mostrar notificaciones</label>
+        <label class="switch">
+          <input type="checkbox" id="showNotifications" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <div>
+          <label for="autoRefresh" data-i18n="autoRefresh">Actualización automática de la lista</label>
+          <p class="field__hint" data-i18n="autoRefreshHint">
+            Vuelve a detectar videos cuando la página cambia (sitios de una sola página).
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autoRefresh" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="field field--row">
+        <label for="theme" data-i18n="theme">Tema</label>
+        <select id="theme">
+          <option value="dark" data-i18n="themeDark">Oscuro</option>
+          <option value="light" data-i18n="themeLight">Claro</option>
+        </select>
+      </div>
+
+      <div class="field field--row">
+        <label for="language" data-i18n="language">Idioma</label>
+        <select id="language">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
+      <button id="saveBtn" class="btn btn--primary" type="button" data-i18n="save">Guardar</button>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <h2 data-i18n="sectionHistory">Historial</h2>
+        <button id="clearHistoryBtn" class="btn btn--danger" type="button" data-i18n="clearHistory">
+          Borrar historial
+        </button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <p id="historyEmpty" class="empty-state hidden" data-i18n="historyEmpty">
+        Todavía no hay descargas registradas.
+      </p>
+    </section>
+  </div>
+
+  <template id="historyItemTemplate">
+    <article class="history-item">
+      <div class="history-item__info">
+        <p class="history-item__name"></p>
+        <p class="history-item__meta"></p>
+      </div>
+      <button class="icon-btn history-item__remove" type="button" title="Eliminar">
+        <svg viewBox="0 0 24 24" focusable="false"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </article>
+  </template>
+
+  <script src="../scripts/utils.js"></script>
+  <script src="../scripts/storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
